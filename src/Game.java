@@ -1,9 +1,6 @@
-import javafx.geometry.Pos;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.StringJoiner;
 
 public class Game {
 
@@ -12,7 +9,7 @@ public class Game {
     public static void main(String[] agrs){
         ArrayList<Checker> checkersWhite = new ArrayList<>();
         ArrayList<Checker> checkersBlack = new ArrayList<>();
-        for (char x = 'a';x<='g';x+=2)
+       /* for (char x = 'a';x<='g';x+=2)
             for (int y = 1; y<=3;y++)
                 if (y!=2)
                     checkersWhite.add(new Checker(x,y,false,false));
@@ -23,9 +20,15 @@ public class Game {
                 if (y!=7)
                     checkersBlack.add(new Checker(x,y,false,false));
                 else
-                    checkersBlack.add(new Checker((char)(x-1),y,false,false));
+                    checkersBlack.add(new Checker((char)(x-1),y,false,false));*/
+        checkersWhite.add(new Checker('a',1,true,false));
+        checkersBlack.add(new Checker('d',4,false,false));
+        checkersBlack.add(new Checker('d',6,false,false));
+      //  checkersWhite.add(new Checker('e',5,false,false));
         position = new Position(checkersWhite,checkersBlack,false);
-      run();
+      //run();
+        System.out.println((AI.canMove(position,'a',1,'f',6,true)));
+        //System.out.println(AI.isQueentake(position,'e',5));
     }
 
     public static void run(){
@@ -61,25 +64,21 @@ class Checker {
 class Position {
     ArrayList<Checker> checkersWhite;
     ArrayList<Checker> checkersBlack;
-    Position position;
     boolean take;
 
     Position(ArrayList<Checker> checkersWhite, ArrayList<Checker> checkersBlack, boolean take) {
-        this.checkersBlack = checkersBlack;
-        this.checkersWhite = checkersWhite;
+        this.checkersBlack = (ArrayList<Checker>) checkersBlack.clone();
+        this.checkersWhite = (ArrayList<Checker>) checkersWhite.clone();
         this.take = take;
-    }
-    Position(Position position) {
-        this.position = position;
     }
 
     void replace(char x1, int y1, char x2, int y2) {
         for (int i = 0; i < checkersBlack.size(); i++)
             if (((checkersBlack.get(i)).x == x1) && ((checkersBlack.get(i)).y == y1))
-                checkersBlack.set(i, new Checker(x2, y2,((y2 == 1) || (checkersBlack.get(i)).queen), AI.isTake(position,1)));
+                checkersBlack.set(i, new Checker(x2, y2,((y2 == 1) || (checkersBlack.get(i)).queen), AI.isTake(new Position(checkersWhite,checkersBlack,take),1)));
         for (int i = 0; i < checkersWhite.size(); i++)
             if (((checkersWhite.get(i)).x == x1) && ((checkersWhite.get(i)).y == y1))
-                checkersWhite.set(i, new Checker(x2, y2, ((y2 == 8) || (checkersWhite.get(i)).queen), AI.isTake(position,0)));
+                checkersWhite.set(i, new Checker(x2, y2, ((y2 == 8) || (checkersWhite.get(i)).queen), AI.isTake(new Position(checkersWhite,checkersBlack,take),0)));
     }
 
     int Equels(char x, int y){
@@ -97,7 +96,7 @@ class Position {
             if (((checkersBlack.get(i)).x == x) && ((checkersBlack.get(i)).y == y) && ((checkersBlack.get(i)).queen))
                 return true;
         for (int i = 0; i < checkersWhite.size(); i++)
-            if (((checkersWhite.get(i)).x == x) && ((checkersWhite.get(i)).y == y) && ((checkersBlack.get(i)).queen))
+            if (((checkersWhite.get(i)).x == x) && ((checkersWhite.get(i)).y == y) && ((checkersWhite.get(i)).queen))
                 return true;
         return false;
     }
@@ -116,30 +115,30 @@ class Position {
         int white = 0, black = 0;
         if ((x2-x1>0) && (y2-y1>0))
             for (int k = 1; k < Math.abs(y1-y2); k++) {
-                if ((position.Equels((char) (x1 + k), y1 + k) == 1))
+                if ((Equels((char) (x1 + k), y1 + k) == 1))
                     white++;
-                if ((position.Equels((char) (x1 + k), y1 + k) == -1))
+                if ((Equels((char) (x1 + k), y1 + k) == -1))
                     black++;
             }
             else if ((x2-x1<0) && (y2-y1>0))
             for (int k = 1; k < Math.abs(y1-y2); k++) {
-                if ((position.Equels((char) (x1 - k), y1 + k) == 1))
+                if ((Equels((char) (x1 - k), y1 + k) == 1))
                     white++;
-                if ((position.Equels((char) (x1 - k), y1 + k) == -1))
+                if ((Equels((char) (x1 - k), y1 + k) == -1))
                     black++;
             }
             else if ((x2-x1<0) && (y2-y1<0))
             for (int k = 1; k < Math.abs(y1-y2); k++) {
-                if ((position.Equels((char) (x1 - k), y1 - k) == 1))
+                if ((Equels((char) (x1 - k), y1 - k) == 1))
                     white++;
-                if ((position.Equels((char) (x1 - k), y1 - k) == -1))
+                if ((Equels((char) (x1 - k), y1 - k) == -1))
                     black++;
             }
         else if ((x2-x1>0) && (y2-y1<0))
             for (int k = 1; k < Math.abs(y1-y2); k++) {
-                if ((position.Equels((char) (x1 + k), y1 - k) == 1))
+                if ((Equels((char) (x1 + k), y1 - k) == 1))
                     white++;
-                if ((position.Equels((char) (x1 + k), y1 - k) == -1))
+                if ((Equels((char) (x1 + k), y1 - k) == -1))
                     black++;
             }
 
