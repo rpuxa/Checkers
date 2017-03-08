@@ -110,4 +110,48 @@ class Position {
                 return i;
         return -1;
     }
+    int equelsDiagonal(char x1, int y1,char x2, int y2){
+        if ((Math.abs(x1-x2)==1) && (Math.abs(y1-y2)==1))
+            return 0;
+        int white = 0, black = 0;
+        if ((x2-x1>0) && (y2-y1>0))
+            for (int k = 1; k < Math.abs(y1-y2); k++) {
+                if ((position.Equels((char) (x1 + k), y1 + k) == 1))
+                    white++;
+                if ((position.Equels((char) (x1 + k), y1 + k) == -1))
+                    black++;
+            }
+            else if ((x2-x1<0) && (y2-y1>0))
+            for (int k = 1; k < Math.abs(y1-y2); k++) {
+                if ((position.Equels((char) (x1 - k), y1 + k) == 1))
+                    white++;
+                if ((position.Equels((char) (x1 - k), y1 + k) == -1))
+                    black++;
+            }
+            else if ((x2-x1<0) && (y2-y1<0))
+            for (int k = 1; k < Math.abs(y1-y2); k++) {
+                if ((position.Equels((char) (x1 - k), y1 - k) == 1))
+                    white++;
+                if ((position.Equels((char) (x1 - k), y1 - k) == -1))
+                    black++;
+            }
+        else if ((x2-x1>0) && (y2-y1<0))
+            for (int k = 1; k < Math.abs(y1-y2); k++) {
+                if ((position.Equels((char) (x1 + k), y1 - k) == 1))
+                    white++;
+                if ((position.Equels((char) (x1 + k), y1 - k) == -1))
+                    black++;
+            }
+
+
+        if ((white == 1) && (black == 0))
+            return 1;
+        if ((white == 0) && (black == 1))
+            return -1;
+        if ((white == 0) && (black == 0))
+            return 0;
+        if ((white != 0) && (black != 0))
+            return 2;
+        return 0;
+    }
 }
