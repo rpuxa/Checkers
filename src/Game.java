@@ -79,7 +79,7 @@ class Position {
                 checkersBlack.set(i, new Checker(x2, y2,((y2 == 1) || (checkersBlack.get(i)).queen), AI.isTake(position,1)));
         for (int i = 0; i < checkersWhite.size(); i++)
             if (((checkersWhite.get(i)).x == x1) && ((checkersWhite.get(i)).y == y1))
-                checkersWhite.set(i, new Checker(x2, y2, ((y2 == 1) || (checkersWhite.get(i)).queen), AI.isTake(position,0)));
+                checkersWhite.set(i, new Checker(x2, y2, ((y2 == 8) || (checkersWhite.get(i)).queen), AI.isTake(position,0)));
     }
 
     int Equels(char x, int y){
