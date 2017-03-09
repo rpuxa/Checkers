@@ -2,59 +2,89 @@
 import java.util.ArrayList;
 
 public class AI {
-   /* public ArrayList<Integer> analyze(Position position, int depth, int maxDepth){
+    public ArrayList<Integer> analyze(Position position, int depth, int maxDepth,char x1,int y1, char x2,int y2) {
         int result;
-        char x1='0',x2='0';
-        int y1=0,y2=0;
-        if (depth%2==0){
-            double min=10000;
-            boolean queen=false;
-            boolean istake = isTake(position,0);
-                for (int i=0;i<position.checkersBlack.size();i++) {
-                    x1=(position.checkersBlack.get(i)).x;
-                    y1=(position.checkersBlack.get(i)).y;
-                    queen=(position.checkersBlack.get(i)).queen;
-                }
-                if (!queen)
-                    for (int j = 1; j <= 6; j++)
+        position.replace(x1,y1,x2,y2);
+        x1 = '0'; x2 = '0';
+        y1 = 0; y2 = 0;
+        if (depth % 2 == 0) {
+            double min = 10000;
+            boolean queen = false;
+            boolean istake = isTake(position, 0);
+            for (int i = 0; i < position.checkersBlack.size(); i++) {
+                x1 = (position.checkersBlack.get(i)).x;
+                y1 = (position.checkersBlack.get(i)).y;
+                queen = (position.checkersBlack.get(i)).queen;
+            }
+            if (!queen)
+                for (int j = 1; j <= 6; j++)
+                    switch (j) {
+                        case 1:
+                            if (canMove(position, x1, y1, (char) (x1 + 1), y2 - 1, istake)) {
+                                x2 = (char) (x1 + 1);
+                                y2 = y1 + 1;
+                            }
+                        case 2:
+                            if (canMove(position, x1, y1, (char) (x1 - 1), y2 - 1, istake)) {
+                                x2 = (char) (x1 - 1);
+                                y2 = y1 + 1;
+                            }
+                        case 3:
+                            if (canMove(position, x1, y1, (char) (x1 + 2), y2 + 2, istake)) {
+                                x2 = (char) (x1 + 2);
+                                y2 = y1 + 2;
+                            }
+                        case 4:
+                            if (canMove(position, x1, y1, (char) (x1 - 2), y2 + 2, istake)) {
+                                x2 = (char) (x1 - 2);
+                                y2 = y1 + 2;
+                            }
+                        case 5:
+                            if (canMove(position, x1, y1, (char) (x1 - 2), y2 - 2, istake)) {
+                                x2 = (char) (x1 - 2);
+                                y2 = y1 - 2;
+                            }
+                        case 6:
+                            if (canMove(position, x1, y1, (char) (x1 + 2), y2 - 2, istake)) {
+                                x2 = (char) (x1 + 2);
+                                y2 = y1 - 2;
+                            }
+                        default:
+                            y2 = 0;
+                    }
+            else {
+                for (int j = 1; j <= 4; j++)
+                    for (int i = 0; i <= 7; i++) {
                         switch (j) {
                             case 1:
-                                if (canMove(position,x1,y1,(char)(x1+1),y2+1,istake)){
-                                    x2=(char)(x1+1);
-                                    y2=y1+1;
+                                if (canMove(position, x1, y1, (char) (x1 + i), y2 + i, istake)) {
+                                    x2 = (char) (x1 + i);
+                                    y2 = y1 + i;
                                 }
                             case 2:
-                                if (canMove(position,x1,y1,(char)(x1-1),y2+1,istake)){
-                                    x2=(char)(x1-1);
-                                    y2=y1+1;
+                                if (canMove(position, x1, y1, (char) (x1 - i), y2 + i, istake)) {
+                                    x2 = (char) (x1 - i);
+                                    y2 = y1 + i;
                                 }
                             case 3:
-                                if (canMove(position,x1,y1,(char)(x1+2),y2+2,istake)){
-                                    x2=(char)(x1+2);
-                                    y2=y1+2;
+                                if (canMove(position, x1, y1, (char) (x1 - i), y2 - i, istake)) {
+                                    x2 = (char) (x1 - i);
+                                    y2 = y1 - i;
                                 }
                             case 4:
-                                if (canMove(position,x1,y1,(char)(x1-2),y2+2,istake)){
-                                    x2=(char)(x1-2);
-                                    y2=y1+2;
+                                if (canMove(position, x1, y1, (char) (x1 + i), y2 - i, istake)) {
+                                    x2 = (char) (x1 + i);
+                                    y2 = y1 - i;
                                 }
-                            case 5:
-                                if (canMove(position,x1,y1,(char)(x1-2),y2-2,istake)){
-                                    x2=(char)(x1-2);
-                                    y2=y1-2;
-                                }
-                            case 6:
-                                if (canMove(position,x1,y1,(char)(x1+2),y2-2,istake)){
-                                    x2=(char)(x1+2);
-                                    y2=y1-2;
-                                }
-                                default: y2=0;
                         }
+                    }
 
 
-                }
+            }
+            result = analyze(position,(isTake(position,0) ? depth:depth+1),maxDepth,x1,y1,x2,y2);
 
-    } */
+        }
+    }
 
     public static boolean isTake(Position position,int color){
         if (color==0){
