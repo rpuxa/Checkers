@@ -101,8 +101,8 @@ public class AI {
     }
 
     public static boolean canMove(Position position, char x1, int y1, char x2, int y2, boolean istake){
-        if ((!position.take || (position.checkersBlack.get(position.IndexOF(x1, y1))).move) && (position.Equels(x1,y1)!=0)) {
-            if ((position.Equels(x1, y1) == -1) && (!position.isQueen(x1, y1))) {
+        if (position.Equels(x1,y1)!=0) {
+            if ((position.Equels(x1, y1) == -1) && (!position.isQueen(x1, y1)) && (!position.take || (position.checkersBlack.get(position.IndexOF(x1, y1))).move)) {
                 if ((!istake) && ((x1 + 1 == (int) x2) || (x1 - 1 == (int) x2)) && (y1 - 1 == y2) && (position.Equels(x2, y2) == 0) && (!isBorder(x2, y2)))
                     return true;
                 if (istake) {
@@ -117,7 +117,7 @@ public class AI {
                 }
             }
 
-            if ((position.Equels(x1, y1) == 1) && (!position.isQueen(x1, y1))) {
+            if ((position.Equels(x1, y1) == 1) && (!position.isQueen(x1, y1)) && (!position.take || (position.checkersWhite.get(position.IndexOF(x1, y1))).move)) {
                 if ((!istake) && ((x1 + 1 == (int) x2) || (x1 - 1 == (int) x2)) && (y1 + 1 == y2) && (position.Equels(x2, y2) == 0) && (!isBorder(x2, y2)))
                     return true;
                 if (istake) {
@@ -131,7 +131,7 @@ public class AI {
                         return true;
                 }
             }
-
+            if ((position.Equels(x1,y1) == 1 && (!position.take || (position.checkersWhite.get(position.IndexOF(x1, y1))).move)) || (position.Equels(x1,y1) == -1 && (!position.take || (position.checkersBlack.get(position.IndexOF(x1, y1))).move)))
             if ((position.isQueen(x1, y1)) && (position.Equels(x2, y2) == 0) && (!isBorder(x2, y2))) {
                 for (int i = 1; i <= 7; i++)
                     if ((((x1 + i == (int) x2) && (y1 + i == y2)) || ((x1 - i == (int) x2) && (y1 + i == y2)) || ((x1 - i == (int) x2) && (y1 - i == y2)) || ((x1 + i == (int) x2) && (y1 - i == y2)))) {
@@ -204,11 +204,11 @@ public class AI {
                     Position position1 = new Position(position.checkersWhite,position.checkersBlack,position.take);
                         for (int k = -5; k <= j; k++) {
                             for (int i = 0; i < position1.checkersWhite.size(); i++) {
-                                if (((position1.checkersWhite.get(i)).x == (char) (x + k)) && ((position1.checkersWhite.get(i)).y == y + k))
+                                if (((position1.checkersWhite.get(i)).x == (char) (x - k)) && ((position1.checkersWhite.get(i)).y == y + k))
                                     position1.checkersWhite.remove(i);
                             }
                             for (int i = 0; i < position1.checkersBlack.size(); i++) {
-                                if (((position1.checkersBlack.get(i)).x == (char) (x + k)) && ((position1.checkersBlack.get(i)).y == y + k))
+                                if (((position1.checkersBlack.get(i)).x == (char) (x - k)) && ((position1.checkersBlack.get(i)).y == y + k))
                                     position1.checkersBlack.remove(i);
                             }
                         }
@@ -232,11 +232,11 @@ public class AI {
                     Position position1 = new Position(position.checkersWhite,position.checkersBlack,position.take);
                         for (int k = -5; k <= j; k++) {
                             for (int i = 0; i < position1.checkersWhite.size(); i++) {
-                                if (((position1.checkersWhite.get(i)).x == (char) (x + k)) && ((position1.checkersWhite.get(i)).y == y + k))
+                                if (((position1.checkersWhite.get(i)).x == (char) (x - k)) && ((position1.checkersWhite.get(i)).y == y - k))
                                     position1.checkersWhite.remove(i);
                             }
                             for (int i = 0; i < position1.checkersBlack.size(); i++) {
-                                if (((position1.checkersBlack.get(i)).x == (char) (x + k)) && ((position1.checkersBlack.get(i)).y == y + k))
+                                if (((position1.checkersBlack.get(i)).x == (char) (x - k)) && ((position1.checkersBlack.get(i)).y == y - k))
                                     position1.checkersBlack.remove(i);
                             }
                         }
@@ -260,11 +260,11 @@ public class AI {
                     Position position1 = new Position(position.checkersWhite,position.checkersBlack,position.take);
                         for (int k = -5; k <= j; k++) {
                             for (int i = 0; i < position1.checkersWhite.size(); i++) {
-                                if (((position1.checkersWhite.get(i)).x == (char) (x + k)) && ((position1.checkersWhite.get(i)).y == y + k))
+                                if (((position1.checkersWhite.get(i)).x == (char) (x + k)) && ((position1.checkersWhite.get(i)).y == y - k))
                                     position1.checkersWhite.remove(i);
                             }
                             for (int i = 0; i < position1.checkersBlack.size(); i++) {
-                                if (((position1.checkersBlack.get(i)).x == (char) (x + k)) && ((position1.checkersBlack.get(i)).y == y + k))
+                                if (((position1.checkersBlack.get(i)).x == (char) (x + k)) && ((position1.checkersBlack.get(i)).y == y - k))
                                     position1.checkersBlack.remove(i);
                             }
                         }
@@ -319,11 +319,11 @@ public class AI {
                     Position position1 = new Position(position.checkersWhite,position.checkersBlack,position.take);
                         for (int k = -5; k <= j; k++) {
                             for (int i = 0; i < position1.checkersWhite.size(); i++) {
-                                if (((position1.checkersWhite.get(i)).x == (char) (x + k)) && ((position1.checkersWhite.get(i)).y == y + k))
+                                if (((position1.checkersWhite.get(i)).x == (char) (x - k)) && ((position1.checkersWhite.get(i)).y == y + k))
                                     position1.checkersWhite.remove(i);
                             }
                             for (int i = 0; i < position1.checkersBlack.size(); i++) {
-                                if (((position1.checkersBlack.get(i)).x == (char) (x + k)) && ((position1.checkersBlack.get(i)).y == y + k))
+                                if (((position1.checkersBlack.get(i)).x == (char) (x - k)) && ((position1.checkersBlack.get(i)).y == y + k))
                                     position1.checkersBlack.remove(i);
                             }
                         }
@@ -347,11 +347,11 @@ public class AI {
                     Position position1 = new Position(position.checkersWhite,position.checkersBlack,position.take);
                         for (int k = -5; k <= j; k++) {
                             for (int i = 0; i < position1.checkersWhite.size(); i++) {
-                                if (((position1.checkersWhite.get(i)).x == (char) (x + k)) && ((position1.checkersWhite.get(i)).y == y + k))
+                                if (((position1.checkersWhite.get(i)).x == (char) (x - k)) && ((position1.checkersWhite.get(i)).y == y - k))
                                     position1.checkersWhite.remove(i);
                             }
                             for (int i = 0; i < position1.checkersBlack.size(); i++) {
-                                if (((position1.checkersBlack.get(i)).x == (char) (x + k)) && ((position1.checkersBlack.get(i)).y == y + k))
+                                if (((position1.checkersBlack.get(i)).x == (char) (x - k)) && ((position1.checkersBlack.get(i)).y == y - k))
                                     position1.checkersBlack.remove(i);
                             }
                         }
@@ -375,11 +375,11 @@ public class AI {
                     Position position1 = new Position(position.checkersWhite,position.checkersBlack,position.take);
                         for (int k = -5; k <= j; k++) {
                             for (int i = 0; i < position1.checkersWhite.size(); i++) {
-                                if (((position1.checkersWhite.get(i)).x == (char) (x + k)) && ((position1.checkersWhite.get(i)).y == y + k))
+                                if (((position1.checkersWhite.get(i)).x == (char) (x + k)) && ((position1.checkersWhite.get(i)).y == y - k))
                                     position1.checkersWhite.remove(i);
                             }
                             for (int i = 0; i < position1.checkersBlack.size(); i++) {
-                                if (((position1.checkersBlack.get(i)).x == (char) (x + k)) && ((position1.checkersBlack.get(i)).y == y + k))
+                                if (((position1.checkersBlack.get(i)).x == (char) (x + k)) && ((position1.checkersBlack.get(i)).y == y - k))
                                     position1.checkersBlack.remove(i);
                             }
                         }

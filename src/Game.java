@@ -21,13 +21,17 @@ public class Game {
                     checkersBlack.add(new Checker(x,y,false,false));
                 else
                     checkersBlack.add(new Checker((char)(x-1),y,false,false));*/
-        checkersWhite.add(new Checker('a',1,true,false));
-        checkersBlack.add(new Checker('d',4,false,false));
-        checkersBlack.add(new Checker('d',6,false,false));
+        checkersWhite.add(new Checker('c',3,true,false));
+        checkersWhite.add(new Checker('c',5,true,false));
+        checkersBlack.add(new Checker('d',4,true,false));
+        checkersBlack.add(new Checker('d',6,true,false));
       //  checkersWhite.add(new Checker('e',5,false,false));
         position = new Position(checkersWhite,checkersBlack,false);
       //run();
-        System.out.println((AI.canMove(position,'a',1,'f',6,true)));
+        System.out.println((AI.canMove(position,'c',3,'e',5,true)));
+        position.replace('c',3,'e',5);
+        System.out.println((AI.canMove(position,'c',5,'e',7,true)));
+        System.out.println((AI.canMove(position,'e',5,'c',7,true)));
         //System.out.println(AI.isQueentake(position,'e',5));
     }
 
@@ -79,6 +83,110 @@ class Position {
         for (int i = 0; i < checkersWhite.size(); i++)
             if (((checkersWhite.get(i)).x == x1) && ((checkersWhite.get(i)).y == y1))
                 checkersWhite.set(i, new Checker(x2, y2, ((y2 == 8) || (checkersWhite.get(i)).queen), AI.isTake(new Position(checkersWhite,checkersBlack,take),0)));
+        if ((x1-x2<0) && (y1-y2<0))
+            for (int k = 1; k < Math.abs(x1-x2); k++) {
+                for (int i = 0; i < checkersWhite.size(); i++) {
+                    if (((checkersWhite.get(i)).x == (char) (x1 + k)) && ((checkersWhite.get(i)).y == y1 + k)) {
+                        checkersWhite.remove(i);
+                        take = true;
+                    }
+                }
+                for (int i = 0; i < checkersBlack.size(); i++) {
+                    if (((checkersBlack.get(i)).x == (char) (x1 + k)) && ((checkersBlack.get(i)).y == y1 + k)) {
+                        checkersBlack.remove(i);
+                        take = true;
+                    }
+                }
+            }
+        if ((x1-x2>0) && (y1-y2<0))
+            for (int k = 1; k < Math.abs(x1-x2); k++) {
+                for (int i = 0; i < checkersWhite.size(); i++) {
+                    if (((checkersWhite.get(i)).x == (char) (x1 - k)) && ((checkersWhite.get(i)).y == y1 + k)){
+                        checkersWhite.remove(i);
+                        take = true;
+                    }
+                }
+                for (int i = 0; i < checkersBlack.size(); i++) {
+                    if (((checkersBlack.get(i)).x == (char) (x1 - k)) && ((checkersBlack.get(i)).y == y1 + k)){
+                        checkersBlack.remove(i);
+                        take = true;
+                    }
+                }
+            }
+        if ((x1-x2>0) && (y1-y2>0))
+            for (int k = 1; k < Math.abs(x1-x2); k++) {
+                for (int i = 0; i < checkersWhite.size(); i++) {
+                    if (((checkersWhite.get(i)).x == (char) (x1 - k)) && ((checkersWhite.get(i)).y == y1 - k)){
+                        checkersWhite.remove(i);
+                        take = true;
+                    }
+                }
+                for (int i = 0; i < checkersBlack.size(); i++) {
+                    if (((checkersBlack.get(i)).x == (char) (x1 - k)) && ((checkersBlack.get(i)).y == y1 - k)){
+                        checkersBlack.remove(i);
+                        take = true;
+                    }
+                }
+            }
+        if ((x1-x2<0) && (y1-y2>0))
+            for (int k = 1; k < Math.abs(x1-x2); k++) {
+                for (int i = 0; i < checkersWhite.size(); i++) {
+                    if (((checkersWhite.get(i)).x == (char) (x1 + k)) && ((checkersWhite.get(i)).y == y1 - k)){
+                        checkersWhite.remove(i);
+                        take = true;
+                    }
+                }
+                for (int i = 0; i < checkersBlack.size(); i++) {
+                    if (((checkersBlack.get(i)).x == (char) (x1 + k)) && ((checkersBlack.get(i)).y == y1 - k)){
+                        checkersBlack.remove(i);
+                        take = true;
+                    }
+                }
+            }
+
+        if (Equels(x2,y2)==-1){
+            for (int i=0;i<checkersBlack.size();i++){
+                char x=(checkersBlack.get(i)).x;
+                int y=(checkersBlack.get(i)).y;
+                if (!(checkersBlack.get(i)).queen && checkersBlack.get(i).move) {
+                    if ((Equels((char) (x + 1), y + 1) == 1) && (Equels((char) (x + 2), y + 2) == 0) && (!AI.isBorder((char) (x + 2), y + 2)))
+                        return;
+                    if ((Equels((char) (x - 1), y + 1) == 1) && (Equels((char) (x - 2), y + 2) == 0) && (!AI.isBorder((char) (x - 2), y + 2)))
+                        return;
+                    if ((Equels((char) (x - 1), y - 1) == 1) && (Equels((char) (x - 2), y - 2) == 0) && (!AI.isBorder((char) (x - 2), y - 2)))
+                        return;
+                    if ((Equels((char) (x + 1), y - 1) == 1) && (Equels((char) (x + 2), y - 2) == 0) && (!AI.isBorder((char) (x + 2), y - 2)))
+                        return;
+                }
+                else
+                    if (AI.isQueentake(new Position(checkersWhite,checkersBlack,take),x,y))
+                        return;
+            }
+        }
+        if (Equels(x2,y2)==1){
+            for (int i=0;i<checkersWhite.size();i++){
+                char x=(checkersWhite.get(i)).x;
+                int y=(checkersWhite.get(i)).y;
+                if (!(checkersWhite.get(i)).queen && checkersWhite.get(i).move) {
+                    if ((Equels((char) (x + 1), y + 1) == -1) && (Equels((char) (x + 2), y + 2) == 0) && (!AI.isBorder((char) (x + 2), y + 2)))
+                        return;
+                    if ((Equels((char) (x - 1), y + 1) == -1) && (Equels((char) (x - 2), y + 2) == 0) && (!AI.isBorder((char) (x - 2), y + 2)))
+                        return;
+                    if ((Equels((char) (x - 1), y - 1) == -1) && (Equels((char) (x - 2), y - 2) == 0) && (!AI.isBorder((char) (x - 2), y - 2)))
+                        return;
+                    if ((Equels((char) (x + 1), y - 1) == -1) && (Equels((char) (x + 2), y - 2) == 0) && (!AI.isBorder((char) (x + 2), y - 2)))
+                        return;
+                }
+                else
+                if (AI.isQueentake(new Position(checkersWhite,checkersBlack,take),x,y))
+                    return;
+            }
+        }
+        for (int i=0;i<checkersWhite.size();i++)
+            checkersWhite.set(i,new Checker((checkersWhite.get(i)).x, (checkersWhite.get(i)).y, (checkersWhite.get(i)).queen, false));
+        for (int i=0;i<checkersBlack.size();i++)
+            checkersBlack.set(i,new Checker((checkersBlack.get(i)).x, (checkersBlack.get(i)).y, (checkersBlack.get(i)).queen, false));
+        take=false;
     }
 
     int Equels(char x, int y){
