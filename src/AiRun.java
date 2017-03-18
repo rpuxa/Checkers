@@ -7,17 +7,17 @@ public class AiRun {
 
        if (depth==0){
            double[] analyzedMoves = new double[100];
-           double max = -10000;
+           double min = 300-0.01*depth;
            int i=0;
            for (Point[] move:
                    position.validMovesWhite) {
                i++;
                double result = analyze(new Position(Game.replace(position,move[0].x,move[0].y,move[1].x,move[1].y)),1,maxDepth)[0];
-               if (result>max)
-                   max=result;
+               if (result<min)
+                   min=result;
                analyzedMoves[i]=result;
            }
-           analyzedMoves[0]=max;
+           analyzedMoves[0]=min;
            return analyzedMoves;
        }
 
@@ -25,7 +25,7 @@ public class AiRun {
            return new double[]{analyzeMaxDepth(position)};
 
         if (depth%2==0){
-           double min = 10000;
+           double min = 300-0.01*depth;
            for (Point[] move:
                    position.validMovesBlack) {
                double result = analyze(new Position(Game.replace(position,move[0].x,move[0].y,move[1].x,move[1].y)),depth+1,maxDepth)[0];
@@ -36,7 +36,7 @@ public class AiRun {
        }
 
        if (depth%2==1){
-           double max = -10000;
+           double max = -300+0.01*depth;
            for (Point[] move:
                    position.validMovesWhite) {
                double result = analyze(new Position(Game.replace(position,move[0].x,move[0].y,move[1].x,move[1].y)),depth+1,maxDepth)[0];

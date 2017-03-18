@@ -1,27 +1,58 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Scanner;
 
 public class Game {
 
     static Position position;
 
+    private static void run(){
+        Scanner scanner = new Scanner(System.in);
+        while (true){
+            String fromPosition = scanner.next(), toPosition = scanner.next();
+            char[] fromPositionChars = fromPosition.toCharArray();
+            char[] toPositionChars = toPosition.toCharArray();
+           replace(position,(int)fromPositionChars[0]-97,(int)fromPositionChars[1]-49,(int)toPositionChars[0]-97,(int)toPositionChars[1]-49);
+        }
+    }
+
+
     public static void main(String[] agrs){
-        Piece[] pieces = {new Piece(true,true), new Piece(false,false), new Piece(false,false), new Piece(true,false)};
+        Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[8][8];
         List<Integer> livePieces = new ArrayList<>();
-        pos[0][0]=0;
-        pos[6][1]=1;
-        pos[6][4]=2;
-        pos[7][0]=3;
-        livePieces.add(0,0);
-        livePieces.add(1,1);
-        livePieces.add(2,2);
-        livePieces.add(3,3);
+        for (int i = 0; i <= 23; i++)
+            livePieces.add(i,i);
+        for (int i = 0; i <= 11; i++)
+            pieces[i] = new Piece(true,false);
+        for (int i = 12; i <= 23; i++)
+            pieces[i] = new Piece(false,false);
+        int i=0;
+        for (int x = 0; x <= 6; x+=2)
+            for (int y = 0; y <= 2; y++) {
+                if (y%2==0)
+                    pos[x][y]=i;
+                else
+                    pos[x+1][y]=i;
+                i++;
+            }
+        for (int x = 7; x >= 1; x-=2)
+            for (int y = 7; y >= 5; y--) {
+                if (y%2==1)
+                    pos[x][y]=i;
+                else
+                    pos[x-1][y]=i;
+                i++;
+            }
+
+
+
        position = new Position(pieces, pos,livePieces,new ArrayList<>(),new ArrayList<>(),false,false,null);
-       position = replace(position, 2,6,6,2);
        position.update(true);
+       run();
     }
+
 
     static Position replace(Position position1, int x1,int y1, int x2, int y2){
         for (int i = 0; i < 8; i++)
