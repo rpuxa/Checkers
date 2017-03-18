@@ -29,7 +29,7 @@ public class AiRun {
     }
 
    public static Double[] analyze(Position position,int depth, int maxDepth){
-       if (position.movePiece!=null)
+       if (depth!=0 && position.movePiece!=null)
            depth--;
 
        if (depth==0){

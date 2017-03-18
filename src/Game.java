@@ -13,35 +13,41 @@ public class Game {
         Scanner scanner = new Scanner(System.in);
         while (true){
             while (true) {
-                String fromPosition = scanner.next(), toPosition = scanner.next();
-                char[] fromPositionChars = fromPosition.toCharArray();
-                char[] toPositionChars = toPosition.toCharArray();
-                int x1=(int) fromPositionChars[0] - 97,y1=(int) fromPositionChars[1] - 49,x2=(int) toPositionChars[0] - 97,y2=(int) toPositionChars[1] - 49;
-                position = replace(position,x1, y1, x2, y2);
-                if (x1<x2 && y1<y2) {
-                    int[][] directions = {
-                            {1, 1}, {-1, 1}, {1, -1}};
-                    if (!position.take(x2,y2,directions))
-                         break;
-                }
-                else if (x1>x2 && y1<y2) {
-                    int[][] directions = {
-                            {-1, -1}, {1, 1}, {-1, 1}};
-                    if (!position.take(x2,y2,directions))
+                position.update(true);
+                boolean take = position.takeWhite;
+                String fromPosition = scanner.next();
+                if (!Objects.equals(fromPosition, "0")) {
+                    String toPosition = scanner.next();
+                    char[] fromPositionChars = fromPosition.toCharArray();
+                    char[] toPositionChars = toPosition.toCharArray();
+                    int x1 = (int) fromPositionChars[0] - 97, y1 = (int) fromPositionChars[1] - 49, x2 = (int) toPositionChars[0] - 97, y2 = (int) toPositionChars[1] - 49;
+                    position = replace(position, x1, y1, x2, y2);
+                    if (!take)
                         break;
+                    if (x1 < x2 && y1 < y2) {
+                        int[][] directions = {
+                                {1, 1}, {-1, 1}, {1, -1}};
+                        if (!position.take(x2, y2, directions))
+                            break;
+                    } else if (x1 > x2 && y1 < y2) {
+                        int[][] directions = {
+                                {-1, -1}, {1, 1}, {-1, 1}};
+                        if (!position.take(x2, y2, directions))
+                            break;
+                    } else if (x1 > x2 && y1 > y2) {
+                        int[][] directions = {
+                                {-1, -1}, {-1, 1}, {1, -1}};
+                        if (!position.take(x2, y2, directions))
+                            break;
+                    } else if (x1 < x2 && y1 > y2) {
+                        int[][] directions = {
+                                {-1, -1}, {1, 1}, {1, -1}};
+                        if (!position.take(x2, y2, directions))
+                            break;
+                    }
                 }
-                else if (x1>x2 && y1>y2) {
-                    int[][] directions = {
-                            {-1, -1}, {-1, 1}, {1, -1}};
-                    if (!position.take(x2,y2,directions))
-                        break;
-                }
-                else if (x1<x2 && y1>y2) {
-                    int[][] directions = {
-                            {-1, -1}, {1, 1}, {1, -1}};
-                    if (!position.take(x2,y2,directions))
-                        break;
-                }
+                else
+                    break;
             }
             AiRun.bfs(2);
         }
@@ -49,7 +55,7 @@ public class Game {
 
 
     public static void main(String[] agrs){
-        Piece[] pieces = new Piece[24];
+       Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
         for (int i = 0; i <= 23; i++)
@@ -75,6 +81,15 @@ public class Game {
                     pos[x-1][y]=i;
                 i++;
             }
+/*
+        Piece[] pieces = {new Piece(false,true),new Piece(true,false)};
+        Integer[][] pos = new Integer[8][8];
+        ArrayList<Integer> livePieces = new ArrayList<>();
+        pos[1][1]=1;
+        pos[5][5]=0;
+        livePieces.add(0,0);
+        livePieces.add(1,1);
+        */
 
        position = new Position(pieces, pos,livePieces,new ArrayList<>(),new ArrayList<>(),false,false,null);
        position.update(true);
@@ -93,7 +108,7 @@ public class Game {
             }
         position1.pos[x2][y2]=position1.pos[x1][y1];
         position1.pos[x1][y1]=null;
-        if (!position1.pieces[position1.pos[x2][y2]].isQueen && (position1.pieces[position1.pos[x2][y2]].isWhite && y2==7 || !position1.pieces[position1.pos[x2][y2]].isWhite && y2==0))
+        if ((position1.pieces[position1.pos[x2][y2]].isWhite && y2==7 || !position1.pieces[position1.pos[x2][y2]].isWhite && y2==0))
             position1.pieces[position1.pos[x2][y2]].isQueen=true;
         if (position1.pieces[position1.pos[x2][y2]].isWhite && position1.takeWhite || !position1.pieces[position1.pos[x2][y2]].isWhite && position1.takeBlack)
             position1.movePiece = new Point(x2,y2);
@@ -223,8 +238,8 @@ class Position{
                                     validMovesBlack.add(new Point[]{new Point(x, y), new Point(x + 2 * direction[0], y + 2 * direction[1])});
                                 }
                 } else {
-                    boolean isQueenTake = false, isQueenMultitake = false;
                     for (int[] direction : directions) {
+                        boolean isQueenTake = false, isQueenMultitake = false;
                         ArrayList<Point[]> validMovesQueen = new ArrayList<>();
                         for (int i = 1; isInBoard(x + i * direction[0], y + i * direction[1]); i++) {
                             if (pos[x + i * direction[0]][y + i * direction[1]] != null && (isQueenTake || isTurnWhite == pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite || (pos[x + i * direction[0]][y + i * direction[1]] != null
@@ -246,9 +261,10 @@ class Position{
                                     if (!takeWhite)
                                         validMovesWhite.clear();
                                     takeWhite = true;
-                                } else if (!takeBlack)
+                                } else if (!takeBlack) {
                                     validMovesBlack.clear();
-                                takeBlack = true;
+                                    takeBlack = true;
+                                }
                                 validMovesQueen.clear();
                             }
                         }
