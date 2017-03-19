@@ -1,8 +1,12 @@
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 public class AiRun {
 
-    public static void bfs(int depth) {
+    static Map<HashPos,Double> hashPos = new HashMap<>();
+
+    static void bfs(int depth) {
         String out1="",out2;
         Point[][] moves = new Point[100][2];
         int k=0,move;
@@ -22,7 +26,7 @@ public class AiRun {
                         min = anl[i];
                         resultMove = i-1;
                     }
-                Game.position = Game.replace(Game.position, Game.position.validMovesBlack.get(resultMove)[0].x, Game.position.validMovesBlack.get(resultMove)[0].y, Game.position.validMovesBlack.get(resultMove)[1].x, Game.position.validMovesBlack.get(resultMove)[1].y);
+               // Game.position = Game.replace(Game.position, Game.position.validMovesBlack.get(resultMove)[0].x, Game.position.validMovesBlack.get(resultMove)[0].y, Game.position.validMovesBlack.get(resultMove)[1].x, Game.position.validMovesBlack.get(resultMove)[1].y);
                 move = resultMove;
             }
             if (k==0)
@@ -35,10 +39,10 @@ public class AiRun {
         System.out.println(out1+out2);
     }
 
-   public static Double[] analyze(Position position, int depth, int maxDepth, double alpha){
+    private static Double[] analyze(Position position, int depth, int maxDepth, double alpha){
        if (depth!=0 && position.movePiece!=null)
            depth--;
-
+        double result;
        if (depth==0){
            position.update(false);
            Double[] analyzedMoves = new Double[100];
@@ -50,7 +54,13 @@ public class AiRun {
                    position.validMovesBlack) {
                i++;
                System.out.println(100*i/position.validMovesBlack.size()+"% ");
-               double result = analyze(Game.replace(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y),1,maxDepth,min)[0];
+               try {
+                   result = equels(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y),depth);
+               }
+               catch (NullPointerException e) {
+                   result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), 1, maxDepth, min)[0];
+                   hashPos.put(new HashPos(position,depth),result);
+               }
                if (result<min)
                    min=result;
                analyzedMoves[i]=result;
@@ -69,7 +79,13 @@ public class AiRun {
                 maxDepth++;
            for (Point[] move:
                    position.validMovesBlack) {
-               double result = analyze(Game.replace(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y),depth+1,maxDepth,min)[0];
+               try {
+                   result = equels(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y),depth);
+               }
+               catch (NullPointerException e) {
+                   result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), depth + 1, maxDepth, min)[0];
+                   hashPos.put(new HashPos(position,depth),result);
+               }
                if (result<min)
                    min=result;
                if (alpha > min)
@@ -85,7 +101,13 @@ public class AiRun {
                maxDepth++;
            for (Point[] move:
                    position.validMovesWhite) {
-               double result = analyze(Game.replace(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y),depth+1,maxDepth,max)[0];
+               try {
+                   result = equels(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y),depth);
+               }
+               catch (NullPointerException e) {
+                   result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), depth + 1, maxDepth, max)[0];
+                   hashPos.put(new HashPos(position,depth),result);
+               }
                if (result>max)
                    max=result;
                if (alpha < max)
@@ -139,5 +161,62 @@ public class AiRun {
         return anl;
     }
 
+    private static Double equels(Position position,int depth){
+        for (int i = 0; i <= depth; i++)
+            if (hashPos.get(new HashPos(position,i))!=null)
+                return hashPos.get(position);
+        return null;
+    }
 
 }
+
+class HashPos {
+    boolean[] pieces = new boolean[24];
+    Integer[][] pos = new Integer[8][8];
+    int depth;
+
+    HashPos(Position position, int depth) {
+        for (int i = 0; i <= 23; i++)
+            this.pieces[i] = position.pieces[i].isQueen;
+        for (int i = 0; i <= 7; ++i) {
+            this.pos[i] = position.pos[i].clone();
+        }
+        this.depth = depth;
+    }
+
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null) return false;
+        if (!(obj instanceof HashPos)) return false;
+
+        HashPos other = (HashPos) obj;
+
+        for (int i = 0; i < pieces.length; ++i)
+            if (pieces[i] != other.pieces[i]) return false;
+
+        for (int x = 0; x <= 7; x++)
+            for (int y = 0; y <= 7; y++)
+                if (!Objects.equals(pos[x][y], other.pos[x][y])) return false;
+
+
+        return depth == other.depth;
+    }
+
+    public int hashCode() {
+        int hash = 0;
+        for (int i = 0; i < pieces.length; ++i) {
+            hash += (pieces[i]) ? 1:2;
+            hash *= 5;
+        }
+
+        for (int x = 0; x <= 7; x++)
+            for (int y = 0; y <= 7; y++)
+                if (pos[x][y]!=null)
+                hash+=x*7+y*11;
+
+        hash += depth*257;
+        return hash;
+    }
+
+}
+

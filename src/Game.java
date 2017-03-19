@@ -1,4 +1,3 @@
-import javafx.geometry.Pos;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,7 +60,7 @@ public class Game {
 
 
     public static void main(String[] agrs){
-      /* Piece[] pieces = new Piece[24];
+       Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
         for (int i = 0; i <= 23; i++)
@@ -86,9 +85,9 @@ public class Game {
                 else
                     pos[x-1][y]=i;
                 i++;
-            }*/
+            }
 
-        Piece[] pieces = {new Piece(false,true),new Piece(true,false), new Piece(true,false),new Piece(true,false)};
+      /*  Piece[] pieces = {new Piece(false,true),new Piece(true,false), new Piece(true,false),new Piece(true,false)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
         pos[4][4]=0;
@@ -100,7 +99,7 @@ public class Game {
         livePieces.add(2,2);
         livePieces.add(3,3);
 
-
+*/
        position = new Position(pieces, pos,livePieces,new ArrayList<>(),new ArrayList<>(),false,false,null);
        position.update(true);
        run();
@@ -180,7 +179,7 @@ class Position{
     boolean takeBlack;
     Point movePiece;
     Position(Piece[] pieces, Integer[][] pos, ArrayList<Integer> livePieces,List<Point[]> validMovesWhite,List<Point[]> validMovesBlack, boolean takeWhite,boolean takeBlack, Point movePiece){
-        for (int i = 0; i <= 3; ++i)
+        for (int i = 0; i <= 23; ++i)
             this.pieces[i] = new Piece(pieces[i].isWhite,pieces[i].isQueen);
         for (int i = 0; i <= 7; ++i) {
             this.pos[i] = pos[i].clone();
@@ -196,7 +195,7 @@ class Position{
             this.movePiece=null;
     }
     Position(Position position){
-        for (int i = 0; i <= 3; ++i)
+        for (int i = 0; i <= 23; ++i)
             this.pieces[i] = new Piece(position.pieces[i].isWhite,position.pieces[i].isQueen);
         for (int i = 0; i <= 7; ++i) {
             this.pos[i] = position.pos[i].clone();
