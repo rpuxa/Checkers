@@ -49,7 +49,9 @@ public class Game {
                 else
                     break;
             }
-            AiRun.bfs(2);
+            AiRun.bfs(4);
+            System.out.println("-----------------------------");
+            System.out.println("Ваш ход:");
         }
     }
 
@@ -106,10 +108,18 @@ public class Game {
                     position1.pos[i][j] = null;
                 }
             }
+            if (x1==4 && y1==4 && x2==6 && y2==2)
+                System.out.printf("");
         position1.pos[x2][y2]=position1.pos[x1][y1];
         position1.pos[x1][y1]=null;
-        if ((position1.pieces[position1.pos[x2][y2]].isWhite && y2==7 || !position1.pieces[position1.pos[x2][y2]].isWhite && y2==0))
-            position1.pieces[position1.pos[x2][y2]].isQueen=true;
+        try {
+            if ((position1.pieces[position1.pos[x2][y2]].isWhite && y2 == 7 || !position1.pieces[position1.pos[x2][y2]].isWhite && y2 == 0))
+                position1.pieces[position1.pos[x2][y2]].isQueen=true;
+        }
+        catch (NullPointerException e){
+            System.out.printf("");
+        }
+
         if (position1.pieces[position1.pos[x2][y2]].isWhite && position1.takeWhite || !position1.pieces[position1.pos[x2][y2]].isWhite && position1.takeBlack)
             position1.movePiece = new Point(x2,y2);
         if (x1<x2 && y1<y2) {
@@ -290,16 +300,17 @@ class Position{
         for (int[] direction : directions)
             for (int i = 1;isInBoard(x+(i+1)*direction[0],y+(i+1)*direction[1]);i++)
                 if (pos[x + i*direction[0]][y + i*direction[1]] != null)
-                    return isTurnWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && pos[x + (i+1) * direction[0] + 1][y + (i+1) * direction[1] + 1] == null;
+                    return isTurnWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && pos[x + (i+1) * direction[0]][y + (i+1) * direction[1]] == null;
         return false;
     }
 
-    public boolean take(int x, int y, int[][] directions){
+    boolean take(int x, int y, int[][] directions){
         if (pieces[pos[x][y]].isQueen){
             for (int[] direction : directions)
                 for (int i = 1;isInBoard(x+(i+1)*direction[0],y+(i+1)*direction[1]);i++)
-                    if (pos[x + i*direction[0]][y + i*direction[1]] != null)
-                        return pieces[pos[x][y]].isWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && pos[x + (i+1) * direction[0] + 1][y + (i+1) * direction[1] + 1] == null;
+                    if (pos[x + i*direction[0]][y + i*direction[1]] != null) {
+                            return pieces[pos[x][y]].isWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null;
+                    }
         }
         else {
             for (int[] direction : directions)
