@@ -7,12 +7,9 @@ import java.util.Scanner;
 public class Game {
 
     static Position position;
+    static double time = 0.1;
 
     private static void run(){
-       /* replace(position,2,2,3,3,new Point[2][2],0);
-        replace(position,1,1,2,2,new Point[2][2],0);
-        replace(position,7,5,6,4,new Point[2][2],0);
-        position.update(false);*/
         Scanner scanner = new Scanner(System.in);
         while (true){
             while (true) {
@@ -54,7 +51,8 @@ public class Game {
             }
             long st = System.currentTimeMillis();
             AiRun.bfs(6);
-            System.out.println((double)(System.currentTimeMillis() - st)/1000 + " сек.");
+            time = ((double)(System.currentTimeMillis() - st)/1000<=0.001) ? time:(double)(System.currentTimeMillis() - st)/1000;
+            System.out.println(time + " сек.");
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
         }
@@ -62,7 +60,7 @@ public class Game {
 
 
     public static void main(String[] agrs){
-       Piece[] pieces = new Piece[24];
+    /*   Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
         for (int i = 0; i <= 23; i++)
@@ -88,20 +86,22 @@ public class Game {
                     pos[x-1][y]=i;
                 i++;
             }
-
-      /*  Piece[] pieces = {new Piece(false,true),new Piece(true,false), new Piece(true,false),new Piece(true,false)};
+*/
+        Piece[] pieces = {new Piece(false,true),new Piece(false,false), new Piece(true,false),new Piece(true,false),new Piece(true,false)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
-        pos[4][4]=0;
-        pos[5][3]=1;
-        pos[5][1]=2;
+        pos[6][6]=0;
+        pos[0][4]=1;
+        pos[3][3]=2;
         pos[2][2]=3;
+        pos[1][1]=4;
         livePieces.add(0,0);
         livePieces.add(1,1);
         livePieces.add(2,2);
         livePieces.add(3,3);
+        livePieces.add(4,4);
 
-*/
+
        position = new Position(pieces, pos,livePieces,new ArrayList<>(),new ArrayList<>(),false,false,null);
        position.update(true);
        run();
@@ -181,7 +181,7 @@ class Position{
     boolean takeBlack;
     Point movePiece;
     Position(Piece[] pieces, Integer[][] pos, ArrayList<Integer> livePieces,List<Point[]> validMovesWhite,List<Point[]> validMovesBlack, boolean takeWhite,boolean takeBlack, Point movePiece){
-        for (int i = 0; i <= 23; ++i)
+        for (int i = 0; i < 5; ++i)
             this.pieces[i] = new Piece(pieces[i].isWhite,pieces[i].isQueen);
         for (int i = 0; i <= 7; ++i) {
             this.pos[i] = pos[i].clone();
@@ -197,7 +197,7 @@ class Position{
             this.movePiece=null;
     }
     Position(Position position){
-        for (int i = 0; i <= 23; ++i)
+        for (int i = 0; i < 5; ++i)
             this.pieces[i] = new Piece(position.pieces[i].isWhite,position.pieces[i].isQueen);
         for (int i = 0; i <= 7; ++i) {
             this.pos[i] = position.pos[i].clone();

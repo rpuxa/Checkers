@@ -1,6 +1,4 @@
-import javafx.geometry.Pos;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -10,6 +8,7 @@ public class AiRun {
     static Map<HashPos,Double> hashPos = new HashMap<>();
 
     static void bfs(int depth) {
+        int moreDepth = 0;
         String out1="",out2;
         Point[][] moves = new Point[100][2];
         int k=0,move;
@@ -19,8 +18,9 @@ public class AiRun {
                 Game.position = Game.replace(Game.position, Game.position.validMovesBlack.get(0)[0].x, Game.position.validMovesBlack.get(0)[0].y, Game.position.validMovesBlack.get(0)[1].x, Game.position.validMovesBlack.get(0)[1].y);
                 move = 0;
             } else {
-                System.out.println("Идет анализ:");
-                Double[] anl = analyze(new Position(Game.position),0,depth,0,new int[20]);
+                moreDepth = (int)Math.log10(30/Game.time);
+                System.out.println("Идет анализ c глубиной: " + depth +" + "+ moreDepth + " c учетом времени...");
+                Double[] anl = analyze(new Position(Game.position),0,depth+moreDepth,0,new int[20]);
                 Double min = 10000.0;
                 System.out.println("Оценка: " + ((double)(Math.round(anl[0]*100000)))/100000);
                 int resultMove = 0;
@@ -119,6 +119,9 @@ public class AiRun {
        final double costQueen = 3*costPiece;
        final double proximityToQueen = 0.01;
        final double captureCenter = 0.15*position.livePieces.size()/24;
+       final double firstHorizontal = 0.04;
+       final double cornerPiece = -0.05;
+       final double passtoQueen = 1.5;
 
        double anl = 0;
         for (int i = 0; i < position.livePieces.size(); i++)
@@ -154,7 +157,60 @@ public class AiRun {
             if (position.pos[x][y] != null)
                 anl += (position.pieces[position.pos[x][y]].isWhite) ? captureCenter:-captureCenter;
         }
+        final int[][] firstHorizontalPos = {{2,0},{4,0},{6,0}};
+        for (int coord[]:
+                firstHorizontalPos) {
+            int x = coord[0], y = coord[1];
+            if (position.pos[x][y] != null)
+                if (position.pieces[position.pos[x][y]].isWhite && !position.pieces[position.pos[x][y]].isQueen)
+                    anl += firstHorizontal;
+                else if (position.pieces[position.pos[x][y]].isWhite && !position.pieces[position.pos[x][y]].isQueen)
+                    anl -= firstHorizontal;
+        }
+
+        if (position.pos[0][0] != null && position.pieces[position.pos[0][0]].isWhite && !position.pieces[position.pos[0][0]].isQueen)
+            anl+=cornerPiece;
+        if (position.pos[7][7] != null && !position.pieces[position.pos[7][7]].isWhite && !position.pieces[position.pos[7][7]].isQueen)
+            anl-=cornerPiece;
+
+        for (int x = 0; x <= 7; x++)
+            for (int y = 0; y <= 7; y++)
+                if (position.pos[x][y]!=null && passToQueen(new Position(position),x,y))
+                    anl+=(position.pieces[position.pos[x][y]].isWhite) ? passtoQueen:-passtoQueen;
+
         return anl;
+    }
+
+    private static boolean passToQueen(Position position,int x, int y) {
+        boolean pass = true;
+        if (position.pieces[position.pos[x][y]].isWhite) {
+            for (int i = 0; i <= 7; i++)
+                for (int j = 0; j <= 7; j++)
+                    if (j >= y && i <= x && (x + y - 2) - i <= j && position.pos[i][j]!=null && !position.pieces[position.pos[i][j]].isWhite)
+                        pass = false;
+
+            if (!pass) {
+                for (int i = 0; i <= 7; i++)
+                    for (int j = 0; j <= 7; j++)
+                        if (j >= y && i >= x && i - (x - y + 2) <= j && position.pos[i][j]!=null && !position.pieces[position.pos[i][j]].isWhite)
+                            return false;
+            }
+
+            return true;
+        }
+        else{
+            for (int i = 0; i <= 7; i++)
+                for (int j = 0; j <= 7; j++)
+                    if (j <= y && i <= x && i - (x - y - 2) >= j && position.pos[i][j]!=null && position.pieces[position.pos[i][j]].isWhite)
+                        pass = false;
+
+            if (!pass)
+                for (int i = 0; i <= 7; i++)
+                    for (int j = 0; j <= 7; j++)
+                        if (j <= y && i >= x && (x + y + 2) - i >= j && position.pos[i][j]!=null && position.pieces[position.pos[i][j]].isWhite)
+                            return false;
+            return true;
+        }
     }
 
     private static Double equals(Position position,int depth){
