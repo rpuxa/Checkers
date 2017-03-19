@@ -10,6 +10,10 @@ public class Game {
     static Position position;
 
     private static void run(){
+       /* replace(position,2,2,3,3,new Point[2][2],0);
+        replace(position,1,1,2,2,new Point[2][2],0);
+        replace(position,7,5,6,4,new Point[2][2],0);
+        position.update(false);*/
         Scanner scanner = new Scanner(System.in);
         while (true){
             while (true) {
@@ -21,7 +25,7 @@ public class Game {
                     char[] fromPositionChars = fromPosition.toCharArray();
                     char[] toPositionChars = toPosition.toCharArray();
                     int x1 = (int) fromPositionChars[0] - 97, y1 = (int) fromPositionChars[1] - 49, x2 = (int) toPositionChars[0] - 97, y2 = (int) toPositionChars[1] - 49;
-                    position = replace(position, x1, y1, x2, y2);
+                    position = replace(position, x1, y1, x2, y2,new Point[1][1],0);
                     if (!take)
                         break;
                     if (x1 < x2 && y1 < y2) {
@@ -49,7 +53,7 @@ public class Game {
                 else
                     break;
             }
-            AiRun.bfs(4);
+            AiRun.bfs(6);
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
         }
@@ -57,7 +61,7 @@ public class Game {
 
 
     public static void main(String[] agrs){
-       Piece[] pieces = new Piece[24];
+      /* Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
         for (int i = 0; i <= 23; i++)
@@ -82,16 +86,20 @@ public class Game {
                 else
                     pos[x-1][y]=i;
                 i++;
-            }
-/*
-        Piece[] pieces = {new Piece(false,true),new Piece(true,false)};
+            }*/
+
+        Piece[] pieces = {new Piece(false,true),new Piece(true,false), new Piece(true,false),new Piece(true,false)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
-        pos[1][1]=1;
-        pos[5][5]=0;
+        pos[4][4]=0;
+        pos[5][3]=1;
+        pos[5][1]=2;
+        pos[1][3]=3;
         livePieces.add(0,0);
         livePieces.add(1,1);
-        */
+        livePieces.add(2,2);
+        livePieces.add(3,3);
+
 
        position = new Position(pieces, pos,livePieces,new ArrayList<>(),new ArrayList<>(),false,false,null);
        position.update(true);
@@ -99,7 +107,7 @@ public class Game {
     }
 
 
-    static Position replace(Position position1, int x1,int y1, int x2, int y2){
+    static Position replace(Position position1, int x1,int y1, int x2, int y2,Point[][] moves,int depth){
         for (int i = 0; i < 8; i++)
             for (int j = 0; j < 8; j++) {
                 if (position1.pos[i][j] != null && (y1 < y2 && (x1 < x2 && i > x1 && i < x2 && j > y1 && j < y2 && x1 - y1 == i - j || x1 > x2 && i < x1 && i > x2 && j > y1 && j < y2 && x1 + y1 == i + j)
@@ -112,14 +120,8 @@ public class Game {
                 System.out.printf("");
         position1.pos[x2][y2]=position1.pos[x1][y1];
         position1.pos[x1][y1]=null;
-        try {
             if ((position1.pieces[position1.pos[x2][y2]].isWhite && y2 == 7 || !position1.pieces[position1.pos[x2][y2]].isWhite && y2 == 0))
                 position1.pieces[position1.pos[x2][y2]].isQueen=true;
-        }
-        catch (NullPointerException e){
-            System.out.printf("");
-        }
-
         if (position1.pieces[position1.pos[x2][y2]].isWhite && position1.takeWhite || !position1.pieces[position1.pos[x2][y2]].isWhite && position1.takeBlack)
             position1.movePiece = new Point(x2,y2);
         if (x1<x2 && y1<y2) {
@@ -178,7 +180,8 @@ class Position{
     boolean takeBlack;
     Point movePiece;
     Position(Piece[] pieces, Integer[][] pos, ArrayList<Integer> livePieces,List<Point[]> validMovesWhite,List<Point[]> validMovesBlack, boolean takeWhite,boolean takeBlack, Point movePiece){
-        this.pieces = pieces.clone();
+        for (int i = 0; i <= 3; ++i)
+            this.pieces[i] = new Piece(pieces[i].isWhite,pieces[i].isQueen);
         for (int i = 0; i <= 7; ++i) {
             this.pos[i] = pos[i].clone();
         }
@@ -187,10 +190,14 @@ class Position{
         this.validMovesBlack = new ArrayList<>(validMovesBlack);
         this.takeWhite=takeWhite;
         this.takeBlack=takeBlack;
-        this.movePiece=movePiece;
+        if (movePiece!=null)
+        this.movePiece=new Point(movePiece.x,movePiece.y);
+        else
+            this.movePiece=null;
     }
     Position(Position position){
-        this.pieces = position.pieces.clone();
+        for (int i = 0; i <= 3; ++i)
+            this.pieces[i] = new Piece(position.pieces[i].isWhite,position.pieces[i].isQueen);
         for (int i = 0; i <= 7; ++i) {
             this.pos[i] = position.pos[i].clone();
         }
@@ -199,7 +206,10 @@ class Position{
         this.validMovesBlack = new ArrayList<>(position.validMovesBlack);
         this.takeWhite=position.takeWhite;
         this.takeBlack=position.takeBlack;
-        this.movePiece=position.movePiece;
+        if (movePiece!=null)
+        this.movePiece=new Point(position.movePiece.x,position.movePiece.y);
+        else
+            this.movePiece=null;
     }
 
     public void update(boolean isTurnWhite) {
@@ -227,7 +237,7 @@ class Position{
                 y = movePiece.y;
             }
             if (x != -1)
-                if (!pieces[pieceNumber].isQueen) {
+                if (!pieces[pos[x][y]].isQueen) {
                     for (int[] direction : directions)
                         if (isInBoard(x + direction[0], y + direction[1]))
                             if ((isTurnWhite && direction[1]==1 || !isTurnWhite && direction[1]==-1) && ((!takeWhite && isTurnWhite) || ((!takeBlack && !isTurnWhite))) && pos[x + direction[0]][y + direction[1]] == null) {
@@ -235,7 +245,7 @@ class Position{
                                     validMovesWhite.add(new Point[]{new Point(x, y), new Point(x + direction[0], y + direction[1])});
                                 else
                                     validMovesBlack.add(new Point[]{new Point(x, y), new Point(x + direction[0], y + direction[1])});
-                            } else if (pos[x + direction[0]][y + direction[1]] != null && isInBoard(x + 2 * direction[0], y + 2 * direction[1]) && pieces[pieceNumber].isWhite == !pieces[pos[x + direction[0]][y + direction[1]]].isWhite && pos[x + 2 * direction[0]][y + 2 * direction[1]] == null)
+                            } else if (pos[x + direction[0]][y + direction[1]] != null && isInBoard(x + 2 * direction[0], y + 2 * direction[1]) && pieces[pos[x][y]].isWhite == !pieces[pos[x + direction[0]][y + direction[1]]].isWhite && pos[x + 2 * direction[0]][y + 2 * direction[1]] == null)
                                 if (isTurnWhite) {
                                     if (!takeWhite)
                                         validMovesWhite.clear();
@@ -265,7 +275,7 @@ class Position{
 
                             } else if (isQueenMultitake && isQueenTake && pos[x + i * direction[0]][y + i * direction[1]] == null && takeQueen(x + i * direction[0], y + i * direction[1], direction, isTurnWhite)) {
                                 validMovesQueen.add(new Point[]{new Point(x, y), new Point(x + i * direction[0], y + i * direction[1])});
-                            } else if (pos[x + i * direction[0]][y + i * direction[1]] != null && !isQueenTake && pieces[pieceNumber].isWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]) && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null) {
+                            } else if (pos[x + i * direction[0]][y + i * direction[1]] != null && !isQueenTake && pieces[pos[x][y]].isWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]) && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null) {
                                 isQueenTake = true;
                                 if (isTurnWhite) {
                                     if (!takeWhite)

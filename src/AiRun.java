@@ -1,34 +1,39 @@
+import java.util.ArrayList;
 
 public class AiRun {
 
     public static void bfs(int depth) {
+        Point[][] moves = new Point[100][2];
+        int k=0,move;
         while (true) {
             Game.position.update(false);
-            int move = 0;
             if (Game.position.validMovesBlack.size() == 1) {
-                Game.position = Game.replace(Game.position, Game.position.validMovesBlack.get(0)[0].x, Game.position.validMovesBlack.get(0)[0].y, Game.position.validMovesBlack.get(0)[1].x, Game.position.validMovesBlack.get(0)[1].y);
+                Game.position = Game.replace(Game.position, Game.position.validMovesBlack.get(0)[0].x, Game.position.validMovesBlack.get(0)[0].y, Game.position.validMovesBlack.get(0)[1].x, Game.position.validMovesBlack.get(0)[1].y,moves.clone(),depth);
                 move = 0;
             } else {
                 System.out.println("Идет анализ:");
-                Double[] anl = analyze(new Position(Game.position),0,depth);
+                Double[] anl = analyze(new Position(Game.position),0,depth,moves.clone());
                 Double min = 10000.0;
+                System.out.println(((double)(Math.round(anl[0]*100000)))/100000);
                 int resultMove = 0;
                 for (int i = 1; anl[i]!=null ; i++)
                     if (anl[i]<min) {
                         min = anl[i];
-                        resultMove = i;
+                        resultMove = i-1;
                     }
-                Game.position = Game.replace(Game.position, Game.position.validMovesBlack.get(resultMove)[0].x, Game.position.validMovesBlack.get(resultMove)[0].y, Game.position.validMovesBlack.get(resultMove)[1].x, Game.position.validMovesBlack.get(resultMove)[1].y);
+                Game.position = Game.replace(Game.position, Game.position.validMovesBlack.get(resultMove)[0].x, Game.position.validMovesBlack.get(resultMove)[0].y, Game.position.validMovesBlack.get(resultMove)[1].x, Game.position.validMovesBlack.get(resultMove)[1].y,moves.clone(),depth);
                 move = resultMove;
             }
-            System.out.println("Ход: " + Game.position.validMovesBlack.get(move)[0].x + "," + Game.position.validMovesBlack.get(move)[0].y +" : "+ Game.position.validMovesBlack.get(move)[1].x + "," + Game.position.validMovesBlack.get(move)[1].y);
+            if (k==0)
+            System.out.print("Ход: " + (char)(Game.position.validMovesBlack.get(move)[0].x+97) + (Game.position.validMovesBlack.get(move)[0].y+1));
             if (Game.position.movePiece==null)
                 break;
+            k++;
         }
-
+        System.out.println(" " + (char)(Game.position.validMovesBlack.get(move)[1].x+97) + (Game.position.validMovesBlack.get(move)[1].y+1) + ";");
     }
 
-   public static Double[] analyze(Position position,int depth, int maxDepth){
+   public static Double[] analyze(Position position, int depth, int maxDepth, Point[][] moves){
        if (depth!=0 && position.movePiece!=null)
            depth--;
 
@@ -43,7 +48,8 @@ public class AiRun {
                    position.validMovesBlack) {
                i++;
                System.out.println(100*i/position.validMovesBlack.size()+"% ");
-               double result = analyze(Game.replace(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y),1,maxDepth)[0];
+               moves[depth] = move.clone();
+               double result = analyze(Game.replace(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y,moves.clone(),depth),1,maxDepth,moves.clone())[0];
                if (result<min)
                    min=result;
                analyzedMoves[i]=result;
@@ -62,7 +68,8 @@ public class AiRun {
                 maxDepth++;
            for (Point[] move:
                    position.validMovesBlack) {
-               double result = analyze(Game.replace(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y),depth+1,maxDepth)[0];
+               moves[depth] = move.clone();
+               double result = analyze(Game.replace(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y,moves.clone(),depth),depth+1,maxDepth,moves.clone())[0];
                if (result<min)
                    min=result;
            }
@@ -76,7 +83,8 @@ public class AiRun {
                maxDepth++;
            for (Point[] move:
                    position.validMovesWhite) {
-               double result = analyze(Game.replace(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y),depth+1,maxDepth)[0];
+               moves[depth] = move.clone();
+               double result = analyze(Game.replace(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y,moves.clone(),depth),depth+1,maxDepth,moves.clone())[0];
                if (result>max)
                    max=result;
            }
@@ -109,11 +117,11 @@ public class AiRun {
 
         for (int x = 0; x <= 7; x++)
             for (int y = 0; y <= 7; y++) {
-            if (position.pos[x][y]!=null)
-                if (position.pieces[position.pos[x][y]].isWhite && !position.pieces[position.pos[x][y]].isQueen) {
+            if (position.pos[x][y]!=null && !position.pieces[position.pos[x][y]].isQueen)
+                if (position.pieces[position.pos[x][y]].isWhite) {
                     anl += y * proximityToQueen;
                 }
-                else if (!position.pieces[position.pos[x][y]].isWhite && !position.pieces[position.pos[x][y]].isQueen) {
+                else if (!position.pieces[position.pos[x][y]].isWhite) {
                     anl -= (7 - y) * proximityToQueen;
                 }
             }
