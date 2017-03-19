@@ -25,7 +25,7 @@ public class Game {
                     char[] fromPositionChars = fromPosition.toCharArray();
                     char[] toPositionChars = toPosition.toCharArray();
                     int x1 = (int) fromPositionChars[0] - 97, y1 = (int) fromPositionChars[1] - 49, x2 = (int) toPositionChars[0] - 97, y2 = (int) toPositionChars[1] - 49;
-                    position = replace(position, x1, y1, x2, y2,new Point[1][1],0);
+                    position = replace(position, x1, y1, x2, y2);
                     if (!take)
                         break;
                     if (x1 < x2 && y1 < y2) {
@@ -94,7 +94,7 @@ public class Game {
         pos[4][4]=0;
         pos[5][3]=1;
         pos[5][1]=2;
-        pos[1][3]=3;
+        pos[2][2]=3;
         livePieces.add(0,0);
         livePieces.add(1,1);
         livePieces.add(2,2);
@@ -107,7 +107,7 @@ public class Game {
     }
 
 
-    static Position replace(Position position1, int x1,int y1, int x2, int y2,Point[][] moves,int depth){
+    static Position replace(Position position1, int x1,int y1, int x2, int y2){
         for (int i = 0; i < 8; i++)
             for (int j = 0; j < 8; j++) {
                 if (position1.pos[i][j] != null && (y1 < y2 && (x1 < x2 && i > x1 && i < x2 && j > y1 && j < y2 && x1 - y1 == i - j || x1 > x2 && i < x1 && i > x2 && j > y1 && j < y2 && x1 + y1 == i + j)
