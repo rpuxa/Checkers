@@ -61,6 +61,8 @@ public class AiRun {
                if (result<min)
                    min=result;
                analyzedMoves[i]=result;
+               if (min<-200)
+                   break;
            }
            analyzedMoves[0]=min;
            return analyzedMoves;
@@ -90,6 +92,8 @@ public class AiRun {
                    min=result;
                if (alpha > result)
                    return new Double[]{min};
+               if (min<-200)
+                   return new Double[]{min};
            }
            return new Double[]{min};
        }
@@ -108,6 +112,8 @@ public class AiRun {
                    max=result;
               if ( alpha < result)
                   return new Double[]{max};
+              if(max>200)
+               return new Double[]{max};
            }
            return new Double[]{max};
        }
