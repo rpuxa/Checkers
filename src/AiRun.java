@@ -48,8 +48,6 @@ public class AiRun {
            Double[] analyzedMoves = new Double[100];
            double min = 300-0.01*depth;
            int i=0;
-           if (position.validMovesBlack.size()==1)
-               maxDepth++;
            for (Point[] move:
                    position.validMovesBlack) {
                i++;
@@ -76,7 +74,7 @@ public class AiRun {
             position.update(false);
            double min = 300-0.01*depth;
             if (position.validMovesBlack.size()==1)
-                maxDepth++;
+               maxDepth++;
            for (Point[] move:
                    position.validMovesBlack) {
                try {
@@ -88,7 +86,7 @@ public class AiRun {
                }
                if (result<min)
                    min=result;
-               if (alpha > min)
+               if (alpha>-200 && alpha < result)
                    return new Double[]{min};
            }
            return new Double[]{min};
@@ -98,7 +96,7 @@ public class AiRun {
            double max = -300+0.01*depth;
            position.update(true);
            if (position.validMovesWhite.size()==1)
-               maxDepth++;
+              maxDepth++;
            for (Point[] move:
                    position.validMovesWhite) {
                try {
@@ -110,7 +108,7 @@ public class AiRun {
                }
                if (result>max)
                    max=result;
-               if (alpha < max)
+               if (alpha<200 && alpha > result)
                    return new Double[]{max};
            }
            return new Double[]{max};
@@ -162,7 +160,7 @@ public class AiRun {
     }
 
     private static Double equals(Position position,int depth){
-        for (int i = 0; i <= depth; i++)
+        for (int i = depth%2; i <= depth; i+=2)
             if (hashPos.get(new HashPos(position,i))!=null)
                 return hashPos.get(new HashPos(position,i));
         return null;
