@@ -52,7 +52,9 @@ public class Game {
                 else
                     break;
             }
+            long st = System.currentTimeMillis();
             AiRun.bfs(6);
+            System.out.println((double)(System.currentTimeMillis() - st)/1000 + " сек.");
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
         }

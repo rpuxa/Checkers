@@ -1,3 +1,6 @@
+import javafx.geometry.Pos;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -17,7 +20,7 @@ public class AiRun {
                 move = 0;
             } else {
                 System.out.println("Идет анализ:");
-                Double[] anl = analyze(new Position(Game.position),0,depth,0);
+                Double[] anl = analyze(new Position(Game.position),0,depth,0,new int[20]);
                 Double min = 10000.0;
                 System.out.println("Оценка: " + ((double)(Math.round(anl[0]*100000)))/100000);
                 int resultMove = 0;
@@ -39,7 +42,7 @@ public class AiRun {
         System.out.println(out1+out2);
     }
 
-    private static Double[] analyze(Position position, int depth, int maxDepth, double alpha){
+    private static Double[] analyze(Position position, int depth, int maxDepth, double alpha,int[] lp){
        if (depth!=0 && position.movePiece!=null)
            depth--;
         double result;
@@ -52,13 +55,9 @@ public class AiRun {
                    position.validMovesBlack) {
                i++;
                System.out.println(100*i/position.validMovesBlack.size()+"% ");
-               try {
-                   result = equals(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y),depth);
-               }
-               catch (NullPointerException e) {
-                   result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), 1, maxDepth, min)[0];
-                   hashPos.put(new HashPos(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y),depth),result);
-               }
+               int[] lpr = lp.clone();
+                   lpr[depth] = countLP(new Position(position));
+                   result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), 1, maxDepth, min,lpr)[0];
                if (result<min)
                    min=result;
                analyzedMoves[i]=result;
@@ -67,26 +66,29 @@ public class AiRun {
            return analyzedMoves;
        }
 
-       if (depth==maxDepth)
+        if (depth%2==1 && depth>=3 && lp[depth]<lp[depth-2] && !position.takeWhite)
+            maxDepth-=2;
+       if (depth%2==0 && depth>=2 && lp[depth]>lp[depth-2] && !position.takeBlack)
+            maxDepth-=2;
+
+       if (depth>=maxDepth)
            return new Double[]{analyzeMaxDepth(new Position(position))};
 
         if (depth%2==0){
             position.update(false);
            double min = 300-0.01*depth;
-            if (position.validMovesBlack.size()==1)
+            if (position.validMovesBlack.size()==1 && position.movePiece==null)
                maxDepth++;
+            if (depth>=2 && lp[depth]>lp[depth-2] && !position.takeBlack)
+                maxDepth-=2;
            for (Point[] move:
                    position.validMovesBlack) {
-               try {
-                   result = equals(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y),depth);
-               }
-               catch (NullPointerException e) {
-                   result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), depth + 1, maxDepth, min)[0];
-                   hashPos.put(new HashPos(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y),depth),result);
-               }
+               int[] lpr = lp.clone();
+               lpr[depth] = countLP(new Position(position));
+                   result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), depth + 1, maxDepth, min,lpr)[0];
                if (result<min)
                    min=result;
-               if (alpha>-200 && alpha < result)
+               if (alpha > result)
                    return new Double[]{min};
            }
            return new Double[]{min};
@@ -95,21 +97,17 @@ public class AiRun {
        if (depth%2==1){
            double max = -300+0.01*depth;
            position.update(true);
-           if (position.validMovesWhite.size()==1)
+           if (position.validMovesWhite.size()==1 && position.movePiece==null)
               maxDepth++;
            for (Point[] move:
                    position.validMovesWhite) {
-               try {
-                   result = equals(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y),depth);
-               }
-               catch (NullPointerException e) {
-                   result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), depth + 1, maxDepth, max)[0];
-                   hashPos.put(new HashPos(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y),depth),result);
-               }
+               int[] lpr = lp.clone();
+               lpr[depth] = countLP(new Position(position));
+                   result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), depth + 1, maxDepth, max,lpr)[0];
                if (result>max)
                    max=result;
-               if (alpha<200 && alpha > result)
-                   return new Double[]{max};
+              if ( alpha < result)
+                  return new Double[]{max};
            }
            return new Double[]{max};
        }
@@ -160,10 +158,18 @@ public class AiRun {
     }
 
     private static Double equals(Position position,int depth){
-        for (int i = depth%2; i <= depth; i+=2)
+        for (int i = depth; i <= depth; i+=2)
             if (hashPos.get(new HashPos(position,i))!=null)
                 return hashPos.get(new HashPos(position,i));
         return null;
+    }
+
+    private static int countLP(Position position){
+        int count = 0;
+        for (int i = 0; i < position.livePieces.size(); i++) {
+           count += (position.pieces[position.livePieces.get(i)].isWhite) ? 1:-1;
+        }
+        return count;
     }
 
 }
