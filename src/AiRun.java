@@ -18,9 +18,10 @@ class AiRun {
                 move = 0;
             } else {
                 movesscore = analyze(new Position(Game.position), 0, 6, 0, new int[100], false);
-                label: for (int i = 0; System.currentTimeMillis() - Game.st <= 30000; i++) {
-                    System.out.println("Идет анализ c глубиной: " + (2*(i/2)+8));
-                    Double[] anl = analyze(new Position(Game.position), 0, (2*(i/2)+8), 0, new int[100], true);
+                label: for (int i = 0; System.currentTimeMillis() - Game.st <= 30000; i+=2) {
+                    System.out.println("Идет анализ c глубиной: " + (i+8));
+                    Double[] anl = analyze(new Position(Game.position), 0, i+8, 0, new int[100], true);
+                    hashPos.clear();
                     for (int j = 0; j < anl.length; j++)
                         if (anl[j]!=null) {
                             movesscore[j] = anl[j];
@@ -36,7 +37,7 @@ class AiRun {
                         min = movesscore[i];
                         resultMove = i-1;
                     }
-              //  Game.position = Game.replace(Game.position, Game.position.validMovesBlack.get(resultMove)[0].x, Game.position.validMovesBlack.get(resultMove)[0].y, Game.position.validMovesBlack.get(resultMove)[1].x, Game.position.validMovesBlack.get(resultMove)[1].y);
+                Game.position = Game.replace(Game.position, Game.position.validMovesBlack.get(resultMove)[0].x, Game.position.validMovesBlack.get(resultMove)[0].y, Game.position.validMovesBlack.get(resultMove)[1].x, Game.position.validMovesBlack.get(resultMove)[1].y);
                 move = resultMove;
             }
             if (k==0)
@@ -65,11 +66,11 @@ class AiRun {
                    lpr[depth] = countLP(new Position(position));
                    Position newPosition = Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y);
                    try{
-                       result = hashPos.get(newPosition.numpos+0.001*depth);
+                       result = hashPos.get(newPosition.numpos);
                    }
                    catch (NullPointerException e) {
                        result = analyze(newPosition, 1, maxDepth, min, lpr, puring)[0];
-                       hashPos.put(newPosition.numpos*depth,result);
+                       hashPos.put(newPosition.numpos,result);
                    }
                if (result<min)
                    min=result;
@@ -105,11 +106,11 @@ class AiRun {
                lpr[depth] = countLP(new Position(position));
                Position newPosition = Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y);
                try{
-                   result = hashPos.get(newPosition.numpos+0.001*depth);
+                   result = hashPos.get(newPosition.numpos);
                }
                catch (NullPointerException e) {
-                   result = analyze(newPosition, 1, maxDepth, min, lpr, puring)[0];
-                   hashPos.put(newPosition.numpos*depth,result);
+                   result = analyze(newPosition, depth+1, maxDepth, min, lpr, puring)[0];
+                   hashPos.put(newPosition.numpos,result);
                }
                if (result<min)
                    min=result;
@@ -131,11 +132,11 @@ class AiRun {
                lpr[depth] = countLP(new Position(position));
                Position newPosition = Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y);
                try{
-                   result = hashPos.get(newPosition.numpos+0.001*depth);
+                   result = hashPos.get(newPosition.numpos);
                }
                catch (NullPointerException e) {
-                   result = analyze(newPosition, 1, maxDepth, max, lpr, puring)[0];
-                   hashPos.put(newPosition.numpos*depth,result);
+                   result = analyze(newPosition, depth+1, maxDepth, max, lpr, puring)[0];
+                   hashPos.put(newPosition.numpos,result);
                }
                if (result>max)
                    max=result;

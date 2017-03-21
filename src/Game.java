@@ -128,10 +128,23 @@ public class Game {
                 position1.pieces[position1.pos[x2][y2]].isQueen=true;
         if (position1.pieces[position1.pos[x2][y2]].isWhite && position1.takeWhite || !position1.pieces[position1.pos[x2][y2]].isWhite && position1.takeBlack)
             position1.movePiece = new Point(x2,y2);
+        int i=0;
         if (isTurnWhite)
-            position1.numpos = 100*position1.numpos + position1.validMovesWhite.indexOf(new Point[]{new Point(x1,y1),new Point(x2,y2)});
+            for (Point[] move:
+                 position1.validMovesWhite) {
+                if (move[0].x == x1 && move[0].y == y1 && move[1].x == x2 && move[1].y == y2) {
+                    position1.numpos = 100*position1.numpos + i;
+                }
+                i++;
+            }
         else
-            position1.numpos = 100*position1.numpos + position1.validMovesBlack.indexOf(new Point[]{new Point(x1,y1),new Point(x2,y2)});
+            for (Point[] move:
+                    position1.validMovesBlack) {
+                if (move[0].x == x1 && move[0].y == y1 && move[1].x == x2 && move[1].y == y2) {
+                    position1.numpos = 100*position1.numpos + i;
+                }
+                i++;
+            }
         if (x1<x2 && y1<y2) {
            int[][] directions = {
                      {1, 1}, {-1, 1}, {1, -1}};
