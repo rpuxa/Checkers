@@ -158,6 +158,7 @@ class AiRun {
        final double firstHorizontal = 0.04;
        final double cornerPiece = -0.05;
        final double passtoQueen = 1.5;
+       final double flank = -0.1*position.livePieces.size()/24;
 
        double anl = 0;
         for (int i = 0; i < position.livePieces.size(); i++)
@@ -213,6 +214,27 @@ class AiRun {
             for (int y = 0; y <= 7; y++)
                 if (position.pos[x][y]!=null && passToQueen(new Position(position),x,y))
                     anl+=(position.pieces[position.pos[x][y]].isWhite) ? passtoQueen:-passtoQueen;
+
+        int deltaw = 0,deltab = 0;
+        for (int x = 0; x <= 7; x++)
+            for (int y = 0; y <= 7; y++)
+                if (position.pos[x][y]!=null){
+                    if (x>=3) {
+                        if (position.pieces[position.pos[x][y]].isWhite)
+                            deltaw++;
+                        else
+                            deltab++;
+                    }
+                    if (x<=4){
+                        if (position.pieces[position.pos[x][y]].isWhite)
+                            deltaw--;
+                        else
+                            deltab--;
+                    }
+                }
+            anl+=deltaw*flank;
+            anl-=deltab*flank;
+
 
         return anl;
     }
