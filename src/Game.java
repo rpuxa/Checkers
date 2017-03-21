@@ -103,13 +103,15 @@ public class Game {
         livePieces.add(4,4);
 */
 
-       position = new Position(pieces, pos,livePieces,new ArrayList<>(),new ArrayList<>(),false,false,null);
+       position = new Position(pieces, pos,livePieces,new ArrayList<>(),new ArrayList<>(),false,false,null,0.0);
        position.update(true);
        run();
     }
 
 
     static Position replace(Position position1, int x1,int y1, int x2, int y2){
+        boolean isTurnWhite = position1.pieces[position1.pos[x1][y1]].isWhite;
+        position1.update(isTurnWhite);
         for (int i = 0; i < 8; i++)
             for (int j = 0; j < 8; j++) {
                 if (position1.pos[i][j] != null && (y1 < y2 && (x1 < x2 && i > x1 && i < x2 && j > y1 && j < y2 && x1 - y1 == i - j || x1 > x2 && i < x1 && i > x2 && j > y1 && j < y2 && x1 + y1 == i + j)
@@ -126,6 +128,10 @@ public class Game {
                 position1.pieces[position1.pos[x2][y2]].isQueen=true;
         if (position1.pieces[position1.pos[x2][y2]].isWhite && position1.takeWhite || !position1.pieces[position1.pos[x2][y2]].isWhite && position1.takeBlack)
             position1.movePiece = new Point(x2,y2);
+        if (isTurnWhite)
+            position1.numpos = 100*position1.numpos + position1.validMovesWhite.indexOf(new Point[]{new Point(x1,y1),new Point(x2,y2)});
+        else
+            position1.numpos = 100*position1.numpos + position1.validMovesBlack.indexOf(new Point[]{new Point(x1,y1),new Point(x2,y2)});
         if (x1<x2 && y1<y2) {
            int[][] directions = {
                      {1, 1}, {-1, 1}, {1, -1}};
@@ -181,7 +187,8 @@ class Position{
     boolean takeWhite;
     boolean takeBlack;
     Point movePiece;
-    Position(Piece[] pieces, Integer[][] pos, ArrayList<Integer> livePieces,List<Point[]> validMovesWhite,List<Point[]> validMovesBlack, boolean takeWhite,boolean takeBlack, Point movePiece){
+    Double numpos;
+    Position(Piece[] pieces, Integer[][] pos, ArrayList<Integer> livePieces,List<Point[]> validMovesWhite,List<Point[]> validMovesBlack, boolean takeWhite,boolean takeBlack, Point movePiece, Double numpos){
         for (int i = 0; i <= 23; ++i)
             if (pieces[i]!=null)
             this.pieces[i] = new Piece(pieces[i].isWhite,pieces[i].isQueen);
@@ -197,6 +204,7 @@ class Position{
         this.movePiece=new Point(movePiece.x,movePiece.y);
         else
             this.movePiece=null;
+        this.numpos = numpos;
     }
     Position(Position position){
         for (int i = 0; i <= 23; ++i)
@@ -214,6 +222,7 @@ class Position{
         this.movePiece=new Point(position.movePiece.x,position.movePiece.y);
         else
             this.movePiece=null;
+        this.numpos = position.numpos;
     }
 
     public void update(boolean isTurnWhite) {
