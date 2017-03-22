@@ -1,11 +1,11 @@
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 
 class AiRun {
 
-    static Map<long[], Double> hashPos = new HashMap<>();
+    static Map<NumPos, Double> hashPos = new HashMap<>();
+    static Map<long[], ArrayDeque> historyEuristic = new HashMap<>();
 
     static void bfs() {
         Double[] movesscore = new Double[100];
@@ -53,8 +53,8 @@ class AiRun {
     }
 
     private static Double[] analyze(Position position, int depth, int maxDepth, double alpha, int[] lp, boolean puring) {
-        if (hashPos.get(position.numpos) != null)
-            return new Double[]{hashPos.get(position.numpos.clone())};
+        if (hashPos.get(new NumPos(position.numpos.clone())) != null)
+            return new Double[]{hashPos.get(new NumPos(position.numpos.clone()))};
 
         if (depth != 0 && position.movePiece != null)
             depth--;
@@ -95,30 +95,42 @@ class AiRun {
             return new Double[]{analyzeMaxDepth(new Position(position))};
 
         double min = 300 - 0.01 * depth, max = -300 + 0.01 * depth;
+        Integer i = 0;
+        Deque<Integer> sequence = new ArrayDeque<>();
         if ((position.validMovesBlack.size() == 1 || position.validMovesWhite.size() == 1) && position.movePiece == null)
             maxDepth++;
         for (Point[] move :
                 (depth % 2 == 0) ? position.validMovesBlack : position.validMovesWhite) {
+            i++;
             int[] lpr = lp.clone();
             lpr[depth] = countLP(new Position(position));
             double result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), depth + 1, maxDepth, (depth % 2 == 0) ? min : max, lpr, puring)[0];
             if (depth % 2 == 0) {
-                if (result < min)
+                if (result < min) {
                     min = result;
+                    sequence.addFirst(i);
+                }
+                else
+                    sequence.addLast(i);
                 if (alpha >= result)
                     break;
                 if (min < -200)
                     break;
             } else {
-                if (result > max)
+                if (result > max){
                     max = result;
+                    sequence.addFirst(i);
+                }
+                else
+                    sequence.addLast(i);
                 if (alpha <= result)
                     break;
                 if (max > 200)
                     break;
             }
         }
-        hashPos.put(position.numpos.clone(), (depth % 2 == 0) ? min : max);
+        historyEuristic.put(position.numpos.clone(),new ArrayDeque(sequence));
+        hashPos.put(new NumPos(position.numpos), (depth % 2 == 0) ? min : max);
         return new Double[]{(depth % 2 == 0) ? min : max};
     }
 
@@ -248,4 +260,31 @@ class AiRun {
         return count;
     }
 
+}
+
+class NumPos{
+    long[] numpos = new long[4];
+    NumPos(long[] numpos){
+        this.numpos = numpos.clone();
+    }
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null) return false;
+        if (!(obj instanceof NumPos)) return false;
+
+        NumPos other = (NumPos) obj;
+
+        for (int i = 0; i <= 3; i++)
+            if (numpos[i]!=other.numpos[i])
+                return false;
+        return true;
+    }
+
+    public int hashCode() {
+        int hash = 0;
+        for (int i = 0; i < numpos.length; ++i)
+            hash += numpos[i];
+
+        return hash;
+    }
 }

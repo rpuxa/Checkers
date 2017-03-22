@@ -1,8 +1,5 @@
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
 
 public class Game {
 
@@ -324,6 +321,23 @@ class Position {
         }
         this.takeWhite = takeWhite;
         this.takeBlack = takeBlack;
+        ArrayDeque<Integer> history =AiRun.historyEuristic.get(numpos.clone());
+        if (history!=null){
+            ArrayList<Point[]> moves = new ArrayList();
+            for (Integer i:
+                 history) {
+                moves.add((isTurnWhite) ? validMovesWhite.get(i) : validMovesBlack.get(i));
+                if (isTurnWhite)
+                    validMovesWhite.remove(i);
+                else
+                    validMovesBlack.remove(i);
+            }
+            moves.addAll((isTurnWhite) ? validMovesWhite : validMovesBlack);
+            if (isTurnWhite)
+                validMovesWhite = new ArrayList<>(moves);
+            else
+                validMovesBlack = new ArrayList<>(moves);
+        }
     }
 
     private boolean isInBoard(int x, int y) {
