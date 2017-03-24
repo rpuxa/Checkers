@@ -5,7 +5,9 @@ import java.util.*;
 class AiRun {
 
     static Map<NumPos, Double> hashPos = new HashMap<>();
-    static Map<long[], ArrayDeque> historyEuristic = new HashMap<>();
+    static Map<NumPos, ArrayDeque> historyEuristic = new HashMap<>();
+    final static int timeToMove = 40000;
+    static int CountPositions = 0;
 
     static void bfs() {
         Double[] movesscore = new Double[100];
@@ -19,26 +21,28 @@ class AiRun {
             } else {
 
                 label:
-                for (int i = 0; System.currentTimeMillis() - Game.st <= 30000; i += 2) {
+                for (int i = 0; System.currentTimeMillis() - Game.st <=timeToMove ; i += 2) {
                     System.out.println("Идет анализ c глубиной: " + (i + 8));
                     Double[] anl = analyze(new Position(Game.position), 0, i + 8, 0, new int[100], true);
+                    CountPositions += hashPos.size();
                     System.out.println(hashPos.size());
                     hashPos.clear();
-                    for (int j = 0; j < anl.length; j++)
+                    for (int j = 1; j < anl.length; j++)
                         if (anl[j] != null) {
-                            movesscore[j] = anl[j];
-                            if (movesscore[j] < -250)
+                            movesscore[j-1] = anl[j];
+                            if (movesscore[j-1] < -250)
                                 break label;
                         }
                 }
                 Double min = 10000.0;
-                System.out.println("Оценка: " + ((double) (Math.round(movesscore[0] * 100000))) / 100000);
                 int resultMove = 0;
-                for (int i = 1; movesscore[i] != null; i++)
+                for (int i = 0; movesscore[i] != null; i++)
                     if (movesscore[i] < min) {
                         min = movesscore[i];
-                        resultMove = i - 1;
+                        resultMove = i;
                     }
+                System.out.println("Оценка: " + ((double) (Math.round(movesscore[resultMove] * 100000))) / 100000);
+                System.out.println("Проанализировано " + CountPositions + " позиций");
                 Game.position = Game.replace(Game.position, Game.position.validMovesBlack.get(resultMove)[0].x, Game.position.validMovesBlack.get(resultMove)[0].y, Game.position.validMovesBlack.get(resultMove)[1].x, Game.position.validMovesBlack.get(resultMove)[1].y);
                 move = resultMove;
             }
@@ -53,8 +57,8 @@ class AiRun {
     }
 
     private static Double[] analyze(Position position, int depth, int maxDepth, double alpha, int[] lp, boolean puring) {
-        if (hashPos.get(new NumPos(position.numpos.clone())) != null)
-            return new Double[]{hashPos.get(new NumPos(position.numpos.clone()))};
+        if (hashPos.get(position.getNumpos(depth % 2 == 1)) != null)
+        return new Double[]{hashPos.get(position.getNumpos(depth % 2 == 1))};
 
         if (depth != 0 && position.movePiece != null)
             depth--;
@@ -70,21 +74,20 @@ class AiRun {
                 int[] lpr = lp.clone();
                 lpr[depth] = countLP(new Position(position));
                 double result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), 1, maxDepth, min, lpr, puring)[0];
+                if (System.currentTimeMillis() - Game.st >= timeToMove && maxDepth!=8) {
+                    analyzedMoves[0] = min;
+                    return analyzedMoves;
+                }
                 if (result < min)
                     min = result;
                 analyzedMoves[i] = result;
-                if (System.currentTimeMillis() - Game.st >= 30000)
-                    break;
                 if (min < -200)
                     break;
             }
             analyzedMoves[0] = min;
             return analyzedMoves;
         }
-        if (depth % 2 == 0)
-            position.update(false);
-        else
-            position.update(true);
+            position.update(depth % 2 == 1);
 
         if (puring && depth % 2 == 1 && depth >= 3 && lp[depth] < lp[depth - 2] && !position.takeWhite)
             maxDepth -= 2;
@@ -95,10 +98,11 @@ class AiRun {
             return new Double[]{analyzeMaxDepth(new Position(position))};
 
         double min = 300 - 0.01 * depth, max = -300 + 0.01 * depth;
-        Integer i = 0;
+        int i = -1;
         Deque<Integer> sequence = new ArrayDeque<>();
         if ((position.validMovesBlack.size() == 1 || position.validMovesWhite.size() == 1) && position.movePiece == null)
             maxDepth++;
+
         for (Point[] move :
                 (depth % 2 == 0) ? position.validMovesBlack : position.validMovesWhite) {
             i++;
@@ -111,26 +115,28 @@ class AiRun {
                     sequence.addFirst(i);
                 }
                 else
-                    sequence.addLast(i);
-                if (alpha >= result)
+                   sequence.addLast(i);
+                if (alpha<200 && alpha >= result)
                     break;
                 if (min < -200)
                     break;
             } else {
                 if (result > max){
                     max = result;
-                    sequence.addFirst(i);
+                   sequence.addFirst(i);
                 }
                 else
-                    sequence.addLast(i);
-                if (alpha <= result)
+                   sequence.addLast(i);
+                if (alpha>-200 && alpha <= result)
                     break;
                 if (max > 200)
                     break;
             }
+            if (System.currentTimeMillis() - Game.st >= timeToMove)
+                break;
         }
-        historyEuristic.put(position.numpos.clone(),new ArrayDeque(sequence));
-        hashPos.put(new NumPos(position.numpos), (depth % 2 == 0) ? min : max);
+        historyEuristic.put(position.getNumpos(depth % 2 == 1),new ArrayDeque(sequence));
+        hashPos.put(position.getNumpos(depth % 2 == 1), (depth % 2 == 0) ? min : max);
         return new Double[]{(depth % 2 == 0) ? min : max};
     }
 

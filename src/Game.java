@@ -58,7 +58,7 @@ public class Game {
 
 
     public static void main(String[] agrs) {
-        Piece[] pieces = new Piece[24];
+      Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[BOARD_SIZE][BOARD_SIZE];
         ArrayList<Integer> livePieces = new ArrayList<>();
         for (int i = 0; i <= 23; i++)
@@ -85,24 +85,38 @@ public class Game {
                 i++;
             }
 
-    /*    Piece[] pieces = {new Piece(false,true),new Piece(false,false), new Piece(true,false),new Piece(true,false),new Piece(true,false)};
+      /*  Piece[] pieces = {new Piece(false,true),new Piece(false,true), new Piece(false,false),new Piece(false,false),new Piece(true,false), new Piece(true,true)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
-        pos[6][6]=0;
-        pos[0][4]=1;
-        pos[3][3]=2;
-        pos[2][2]=3;
-        pos[1][1]=4;
+        pos[6][0]=0;
+        pos[4][0]=1;
+        pos[7][5]=2;
+        pos[6][6]=3;
+        pos[0][2]=4;
+        pos[0][4]=5;
         livePieces.add(0,0);
         livePieces.add(1,1);
         livePieces.add(2,2);
         livePieces.add(3,3);
         livePieces.add(4,4);
+        livePieces.add(5,5);
 */
-
+ /*       Piece[] pieces = {new Piece(false,true),new Piece(true,true),new Piece(true,true),new Piece(true,true)};
+        Integer[][] pos = new Integer[8][8];
+        ArrayList<Integer> livePieces = new ArrayList<>();
+        pos[4][0]=0;
+        pos[0][0]=1;
+        pos[1][1]=2;
+        pos[7][1]=3;
+        livePieces.add(0,0);
+        livePieces.add(1,1);
+        livePieces.add(2,2);
+        livePieces.add(3,3);
+        */
         position = new Position(pieces, pos, livePieces, new ArrayList<>(), new ArrayList<>(), false, false, null);
         position.update(true);
         run();
+
     }
 
 
@@ -144,7 +158,7 @@ public class Game {
             if (!position1.take(x2, y2, directions))
                 position1.movePiece = null;
         }
-        return position1;
+        return new Position(position1);
     }
 }
 
@@ -175,10 +189,9 @@ class Position {
     boolean takeWhite;
     boolean takeBlack;
     Point movePiece;
-    long[] numpos = {1,1,1,1};
 
     Position(Piece[] pieces, Integer[][] pos, ArrayList<Integer> livePieces, List<Point[]> validMovesWhite, List<Point[]> validMovesBlack, boolean takeWhite, boolean takeBlack, Point movePiece) {
-        for (int i = 0; i <= 23; ++i)
+        for (int i = 0; i < pieces.length; ++i)
             if (pieces[i] != null)
                 this.pieces[i] = new Piece(pieces[i].isWhite, pieces[i].isQueen);
         for (int i = 0; i <= 7; ++i) {
@@ -193,22 +206,10 @@ class Position {
             this.movePiece = new Point(movePiece.x, movePiece.y);
         else
             this.movePiece = null;
-
-        for (int i = 0; i < Game.BOARD_SIZE; i++)
-            for (int j = 0; j < Game.BOARD_SIZE; j++) {
-                this.numpos[i/2] *= 5;
-                if (pos[i][j] != null) {
-                    if (pieces[pos[i][j]].isWhite)
-                        this.numpos[i/2] += (pieces[pos[i][j]].isQueen) ? 1 : 2;
-                    else
-                        this.numpos[i/2] += (pieces[pos[i][j]].isQueen) ? 3 : 4;
-                }
-            }
-
     }
 
     Position(Position position) {
-        for (int i = 0; i <= 23; ++i)
+        for (int i = 0; i < pieces.length; ++i)
             if (position.pieces[i] != null)
                 this.pieces[i] = new Piece(position.pieces[i].isWhite, position.pieces[i].isQueen);
         for (int i = 0; i < Game.BOARD_SIZE; ++i) {
@@ -219,20 +220,11 @@ class Position {
         this.validMovesBlack = new ArrayList<>(position.validMovesBlack);
         this.takeWhite = position.takeWhite;
         this.takeBlack = position.takeBlack;
-        if (movePiece != null)
+        if (position.movePiece != null)
             this.movePiece = new Point(position.movePiece.x, position.movePiece.y);
         else
             this.movePiece = null;
-        for (int i = 0; i < Game.BOARD_SIZE; i++)
-            for (int j = 0; j < Game.BOARD_SIZE; j++) {
-                this.numpos[i/2] *= 5;
-                if (position.pos[i][j] != null) {
-                    if (position.pieces[position.pos[i][j]].isWhite)
-                        this.numpos[i/2] += (position.pieces[position.pos[i][j]].isQueen) ? 1 : 2;
-                    else
-                        this.numpos[i/2] += (position.pieces[position.pos[i][j]].isQueen) ? 3 : 4;
-                }
-            }
+
     }
 
     public void update(boolean isTurnWhite) {
@@ -319,19 +311,26 @@ class Position {
             if (movePiece != null)
                 break;
         }
+
+
         this.takeWhite = takeWhite;
         this.takeBlack = takeBlack;
-        ArrayDeque<Integer> history =AiRun.historyEuristic.get(numpos.clone());
+        NumPos a = getNumpos(isTurnWhite);
+        ArrayDeque<Integer> history =AiRun.historyEuristic.get(a);
         if (history!=null){
             ArrayList<Point[]> moves = new ArrayList();
-            for (Integer i:
+            for (int i:
                  history) {
-                moves.add((isTurnWhite) ? validMovesWhite.get(i) : validMovesBlack.get(i));
-                if (isTurnWhite)
-                    validMovesWhite.remove(i);
-                else
-                    validMovesBlack.remove(i);
+                    moves.add((isTurnWhite) ? validMovesWhite.get(i) : validMovesBlack.get(i));
             }
+            for (int i:
+                    history) {
+                if (isTurnWhite)
+                       validMovesWhite.remove(moves.get(i));
+                else
+                    validMovesBlack.remove(moves.get(i));
+            }
+
             moves.addAll((isTurnWhite) ? validMovesWhite : validMovesBlack);
             if (isTurnWhite)
                 validMovesWhite = new ArrayList<>(moves);
@@ -369,5 +368,23 @@ class Position {
         return false;
     }
 
+    public NumPos getNumpos(boolean isTurnWhite) {
+        long[] numpos = {1, 1, 1, 1};
+        for (int i = 0; i < Game.BOARD_SIZE; i++)
+            for (int j = 0; j < Game.BOARD_SIZE; j++) {
+                numpos[i / 2] *= 10L;
+                if ((i + j) % 2 == 0 && pos[i][j] != null) {
+                    if (pieces[pos[i][j]].isWhite)
+                        numpos[i / 2] += (pieces[pos[i][j]].isQueen) ? 1L : 2L;
+                    else
+                        numpos[i / 2] += (pieces[pos[i][j]].isQueen) ? 3L : 4L;
+                }
+            }
+        numpos[3] *= 10L;
+        numpos[3] += (isTurnWhite) ? 2:3;
+        if (movePiece!=null)
+            numpos[2] += 10*movePiece.x+movePiece.y;
 
+        return new NumPos(numpos);
+    }
 }
