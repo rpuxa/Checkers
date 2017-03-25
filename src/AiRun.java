@@ -4,9 +4,9 @@ import java.util.*;
 
 class AiRun {
 
-    static Map<NumPos, Double> hashPos = new HashMap<>();
+    static Map<NumPoswithDepth, Double> hashPos = new HashMap<>();
     static Map<NumPos, ArrayDeque> historyEuristic = new HashMap<>();
-    final static int timeToMove = 40000;
+    static int timeToMove = 0;
     static int CountPositions = 0;
 
     static void bfs() {
@@ -23,7 +23,7 @@ class AiRun {
                 label:
                 for (int i = 0; System.currentTimeMillis() - Game.st <=timeToMove ; i += 2) {
                     System.out.println("Идет анализ c глубиной: " + (i + 8));
-                    Double[] anl = analyze(new Position(Game.position), 0, i + 8, 0, new int[100], true);
+                    Double[] anl = analyze(new Position(Game.position), 0, i + 8, 0, new int[100]);
                     CountPositions += hashPos.size();
                     System.out.println(hashPos.size());
                     hashPos.clear();
@@ -54,12 +54,15 @@ class AiRun {
         }
         out2 = " " + (char) (Game.position.validMovesBlack.get(move)[1].x + 'a') + (Game.position.validMovesBlack.get(move)[1].y + 1) + ";";
         System.out.println(out1 + out2);
+        CountPositions = 0;
     }
 
-    private static Double[] analyze(Position position, int depth, int maxDepth, double alpha, int[] lp, boolean puring) {
-        if (hashPos.get(position.getNumpos(depth % 2 == 1)) != null)
-        return new Double[]{hashPos.get(position.getNumpos(depth % 2 == 1))};
-
+    private static Double[] analyze(Position position, int depth, int maxDepth, double alpha, int[] lp) {
+        try {
+       double m = hashPos.get(position.getNumposwirhDepth(depth % 2 == 1,depth));
+        return new Double[]{m};
+        }
+        catch (NullPointerException ignored){}
         if (depth != 0 && position.movePiece != null)
             depth--;
 
@@ -73,7 +76,7 @@ class AiRun {
                 i++;
                 int[] lpr = lp.clone();
                 lpr[depth] = countLP(new Position(position));
-                double result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), 1, maxDepth, min, lpr, puring)[0];
+                double result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), 1, maxDepth, min, lpr)[0];
                 if (System.currentTimeMillis() - Game.st >= timeToMove && maxDepth!=8) {
                     analyzedMoves[0] = min;
                     return analyzedMoves;
@@ -89,9 +92,9 @@ class AiRun {
         }
             position.update(depth % 2 == 1);
 
-        if (puring && depth % 2 == 1 && depth >= 3 && lp[depth] < lp[depth - 2] && !position.takeWhite)
+        if (depth % 2 == 1 && depth >= 3 && lp[depth] < lp[depth - 2] && !position.takeWhite)
             maxDepth -= 2;
-        if (puring && depth % 2 == 0 && depth >= 2 && lp[depth] > lp[depth - 2] && !position.takeBlack)
+        if (depth % 2 == 0 && depth >= 2 && lp[depth] > lp[depth - 2] && !position.takeBlack)
             maxDepth -= 2;
 
         if (depth >= maxDepth)
@@ -100,7 +103,7 @@ class AiRun {
         double min = 300 - 0.01 * depth, max = -300 + 0.01 * depth;
         int i = -1;
         Deque<Integer> sequence = new ArrayDeque<>();
-        if ((position.validMovesBlack.size() == 1 || position.validMovesWhite.size() == 1) && position.movePiece == null)
+        if ((position.takeWhite!=position.takeBlack || position.validMovesBlack.size() == 1 || position.validMovesWhite.size() == 1) && position.movePiece == null)
             maxDepth++;
 
         for (Point[] move :
@@ -108,7 +111,7 @@ class AiRun {
             i++;
             int[] lpr = lp.clone();
             lpr[depth] = countLP(new Position(position));
-            double result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), depth + 1, maxDepth, (depth % 2 == 0) ? min : max, lpr, puring)[0];
+            double result = analyze(Game.replace(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), depth + 1, maxDepth, (depth % 2 == 0) ? min : max, lpr)[0];
             if (depth % 2 == 0) {
                 if (result < min) {
                     min = result;
@@ -135,20 +138,17 @@ class AiRun {
             if (System.currentTimeMillis() - Game.st >= timeToMove)
                 break;
         }
-        historyEuristic.put(position.getNumpos(depth % 2 == 1),new ArrayDeque(sequence));
-        hashPos.put(position.getNumpos(depth % 2 == 1), (depth % 2 == 0) ? min : max);
+        historyEuristic.computeIfAbsent(position.getNumpos(depth % 2 == 1), k -> new ArrayDeque<>(sequence));
+        hashPos.put(position.getNumposwirhDepth(depth % 2 == 1,depth), (depth % 2 == 0) ? min : max);
         return new Double[]{(depth % 2 == 0) ? min : max};
     }
 
     private static double analyzeMaxDepth(Position position) {
         final double costPiece = 1;
         final double costQueen = 3 * costPiece;
-        final double proximityToQueen = 0.01;
-        final double captureCenter = 0.8 * position.livePieces.size() / 24;
-        final double firstHorizontal = 0.04;
-        final double cornerPiece = -0.05;
-        final double passtoQueen = 1.5;
-        final double flank = -0.1 * position.livePieces.size() / 24;
+        final double costOfCell = -0.002;
+        final double passtoQueen = 0.5;
+        final double flank = -0.01 * position.livePieces.size() / 24;
 
         double anl = 0;
         for (int i = 0; i < position.livePieces.size(); i++)
@@ -165,38 +165,16 @@ class AiRun {
                     anl -= costPiece;
             }
 
+        final double[] cells = {19,0,13,0,7,0,1,0,0,16,0,8,0,0,0,0,15,0,9,0,1,0,0,0,0,12,0,6,0,1,0,0,12,0,8,0,1,0,0,0,0,14,0,7,0,1,0,0,17,0,11,0,3,0,0,0,0,18,0,11,0,4,0,1};
+
         for (int x = 0; x <= 7; x++)
-            for (int y = 0; y <= 7; y++) {
-                if (position.pos[x][y] != null && !position.pieces[position.pos[x][y]].isQueen)
-                    if (position.pieces[position.pos[x][y]].isWhite) {
-                        anl += y * proximityToQueen;
-                    } else if (!position.pieces[position.pos[x][y]].isWhite) {
-                        anl -= (7 - y) * proximityToQueen;
-                    }
-            }
+            for (int y = 0; y <= 7; y++)
+                if (position.pos[x][y]!=null && !position.pieces[position.pos[x][y]].isQueen)
+            if (position.pieces[position.pos[x][y]].isWhite)
+                anl += cells[8*x+y]*costOfCell;
+            else
+                anl -= cells[8*x+y]*costOfCell;
 
-        final int[][] center = {{2, 4}, {3, 3}, {4, 4}, {5, 3}};
-        for (int coord[] :
-                center) {
-            int x = coord[0], y = coord[1];
-            if (position.pos[x][y] != null)
-                anl += (position.pieces[position.pos[x][y]].isWhite) ? captureCenter : -captureCenter;
-        }
-        final int[][] firstHorizontalPos = {{2, 0}, {4, 0}, {6, 0}};
-        for (int coord[] :
-                firstHorizontalPos) {
-            int x = coord[0], y = coord[1];
-            if (position.pos[x][y] != null)
-                if (position.pieces[position.pos[x][y]].isWhite && !position.pieces[position.pos[x][y]].isQueen)
-                    anl += firstHorizontal;
-                else if (position.pieces[position.pos[x][y]].isWhite && !position.pieces[position.pos[x][y]].isQueen)
-                    anl -= firstHorizontal;
-        }
-
-        if (position.pos[0][0] != null && position.pieces[position.pos[0][0]].isWhite && !position.pieces[position.pos[0][0]].isQueen)
-            anl += cornerPiece;
-        if (position.pos[7][7] != null && !position.pieces[position.pos[7][7]].isWhite && !position.pieces[position.pos[7][7]].isQueen)
-            anl -= cornerPiece;
 
         for (int x = 0; x <= 7; x++)
             for (int y = 0; y <= 7; y++)
@@ -291,6 +269,35 @@ class NumPos{
         for (int i = 0; i < numpos.length; ++i)
             hash += numpos[i];
 
+        return hash;
+    }
+}
+
+class NumPoswithDepth{
+    long[] numpos = new long[4];
+    int depth;
+    NumPoswithDepth(long[] numpos, int depth){
+        this.numpos = numpos.clone();
+        this.depth = depth;
+    }
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null) return false;
+        if (!(obj instanceof NumPoswithDepth)) return false;
+
+        NumPoswithDepth other = (NumPoswithDepth) obj;
+
+        for (int i = 0; i <= 3; i++)
+            if (numpos[i]!=other.numpos[i])
+                return false;
+        return other.depth == depth;
+    }
+
+    public int hashCode() {
+        int hash = 0;
+        for (int i = 0; i < numpos.length; ++i)
+            hash += numpos[i];
+        hash += 257*depth;
         return hash;
     }
 }

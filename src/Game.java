@@ -4,7 +4,6 @@ import java.util.*;
 public class Game {
 
     static Position position;
-    static double time = 20;
     static long st;
     final static int BOARD_SIZE = 8;
 
@@ -13,15 +12,15 @@ public class Game {
         while (true) {
             while (true) {
                 position.update(true);
-                boolean take = position.takeWhite;
                 String fromPosition = scanner.next();
                 if (!Objects.equals(fromPosition, "0")) {
                     String toPosition = scanner.next();
                     char[] fromPositionChars = fromPosition.toCharArray();
                     char[] toPositionChars = toPosition.toCharArray();
                     int x1 = (int) fromPositionChars[0] - 'a', y1 = (int) fromPositionChars[1] - '1', x2 = (int) toPositionChars[0] - 'a', y2 = (int) toPositionChars[1] - '1';
+
                     position = replace(position, x1, y1, x2, y2);
-                    if (!take)
+                    if (!position.takeWhite)
                         break;
                     if (x1 < x2 && y1 < y2) {
                         int[][] directions = {
@@ -49,15 +48,27 @@ public class Game {
             }
             st = System.currentTimeMillis();
             AiRun.bfs();
-            time = ((double) (System.currentTimeMillis() - st) / 1000 <= 0.001) ? time : (double) (System.currentTimeMillis() - st) / 1000;
-            System.out.println(time + " сек.");
+            System.out.println((System.currentTimeMillis() - st) / 1000 + " сек.");
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
         }
     }
 
 
-    public static void main(String[] agrs) {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Запуск программы...");
+        System.out.println("Время на ход (в секундах):");
+        try {
+            AiRun.timeToMove = Integer.parseInt(args[0]) * 1000;
+            System.out.println(args[0]);
+        }
+        catch (ArrayIndexOutOfBoundsException e){
+                AiRun.timeToMove = scanner.nextInt() * 1000;
+        }
+        System.out.println("Ваш ход:");
+
+
       Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[BOARD_SIZE][BOARD_SIZE];
         ArrayList<Integer> livePieces = new ArrayList<>();
@@ -85,7 +96,7 @@ public class Game {
                 i++;
             }
 
-      /*  Piece[] pieces = {new Piece(false,true),new Piece(false,true), new Piece(false,false),new Piece(false,false),new Piece(true,false), new Piece(true,true)};
+   /*    Piece[] pieces = {new Piece(false,true),new Piece(false,true), new Piece(false,false),new Piece(false,false),new Piece(true,false), new Piece(true,true)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
         pos[6][0]=0;
@@ -318,7 +329,7 @@ class Position {
         NumPos a = getNumpos(isTurnWhite);
         ArrayDeque<Integer> history =AiRun.historyEuristic.get(a);
         if (history!=null){
-            ArrayList<Point[]> moves = new ArrayList();
+            ArrayList<Point[]> moves = new ArrayList<>();
             for (int i:
                  history) {
                     moves.add((isTurnWhite) ? validMovesWhite.get(i) : validMovesBlack.get(i));
@@ -368,11 +379,11 @@ class Position {
         return false;
     }
 
-    public NumPos getNumpos(boolean isTurnWhite) {
+    NumPos getNumpos(boolean isTurnWhite) {
         long[] numpos = {1, 1, 1, 1};
         for (int i = 0; i < Game.BOARD_SIZE; i++)
             for (int j = 0; j < Game.BOARD_SIZE; j++) {
-                numpos[i / 2] *= 10L;
+                numpos[i / 2] *= 5L;
                 if ((i + j) % 2 == 0 && pos[i][j] != null) {
                     if (pieces[pos[i][j]].isWhite)
                         numpos[i / 2] += (pieces[pos[i][j]].isQueen) ? 1L : 2L;
@@ -380,11 +391,17 @@ class Position {
                         numpos[i / 2] += (pieces[pos[i][j]].isQueen) ? 3L : 4L;
                 }
             }
-        numpos[3] *= 10L;
+        numpos[3] *= 5L;
         numpos[3] += (isTurnWhite) ? 2:3;
-        if (movePiece!=null)
-            numpos[2] += 10*movePiece.x+movePiece.y;
+        if (movePiece!=null) {
+            numpos[2] *= 100;
+            numpos[2] += 10 * movePiece.x + movePiece.y;
+        }
 
         return new NumPos(numpos);
+    }
+
+    NumPoswithDepth getNumposwirhDepth(boolean isTurnWhite, int depth) {
+        return new NumPoswithDepth(getNumpos(isTurnWhite).numpos,depth);
     }
 }
