@@ -11,14 +11,22 @@ public class Game {
         Scanner scanner = new Scanner(System.in);
         while (true) {
             while (true) {
-                position.update(true, -1);
+                position.update(true);
+                if (position.validMoves.size()==0){
+                    System.out.println("Компьютер победил!");
+                    String n = scanner.next();
+                    break;
+                }
                 String fromPosition = scanner.next();
                 if (!Objects.equals(fromPosition, "0")) {
                     String toPosition = scanner.next();
                     char[] fromPositionChars = fromPosition.toCharArray();
                     char[] toPositionChars = toPosition.toCharArray();
                     int x1 = (int) fromPositionChars[0] - 'a', y1 = (int) fromPositionChars[1] - '1', x2 = (int) toPositionChars[0] - 'a', y2 = (int) toPositionChars[1] - '1';
-
+                    if (!MakeLegalMove(x1,y1,x2,y2)) {
+                        System.out.println("Неверный ход!");
+                        continue;
+                    }
                     position = MakeMove(position, x1, y1, x2, y2);
                     if (!position.take)
                         break;
@@ -54,6 +62,14 @@ public class Game {
         }
     }
 
+    private static boolean MakeLegalMove(int x1,int y1,int x2, int y2) {
+        for (int i = 0; i < position.validMoves.size(); i++) {
+            Point[] points = position.validMoves.get(i).clone();
+            if (points[0].x==x1 && points[0].y==y1 && points[1].x==x2 && points[1].y==y2)
+                return true;
+        }
+        return false;
+    }
 
     public static void main(String[] args) {
 
@@ -69,8 +85,8 @@ public class Game {
         }
         System.out.println("Ваш ход:");
 
-
-   /*   Piece[] pieces = new Piece[24];
+/*
+      Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[BOARD_SIZE][BOARD_SIZE];
         ArrayList<Integer> livePieces = new ArrayList<>();
         for (int i = 0; i <= 23; i++)
@@ -96,8 +112,7 @@ public class Game {
                     pos[x - 1][y] = i;
                 i++;
             }*/
-
-       Piece[] pieces = {new Piece(false,true),new Piece(false,true), new Piece(false,false),new Piece(false,false),new Piece(true,false), new Piece(true,true)};
+     /*  Piece[] pieces = {new Piece(false,true),new Piece(false,true), new Piece(false,false),new Piece(false,false),new Piece(true,false), new Piece(true,true)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
         pos[6][0]=0;
@@ -112,19 +127,44 @@ public class Game {
         livePieces.add(3,3);
         livePieces.add(4,4);
         livePieces.add(5,5);
-
- /*       Piece[] pieces = {new Piece(false,true),new Piece(true,true),new Piece(true,true),new Piece(true,true)};
+*/
+        Piece[] pieces = {new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
-        pos[4][0]=0;
-        pos[0][0]=1;
-        pos[1][1]=2;
-        pos[7][1]=3;
-        livePieces.add(0,0);
-        livePieces.add(1,1);
-        livePieces.add(2,2);
-        livePieces.add(3,3);
-        */
+        pos[1][7]=0;
+        pos[3][7]=1;
+        pos[0][6]=2;
+        pos[6][6]=3;
+        pos[1][5]=4;
+        pos[3][5]=5;
+        pos[7][5]=6;
+        pos[2][4]=7;
+        pos[3][3]=8;
+        pos[7][3]=9;
+        pos[0][2]=10;
+        pos[4][2]=11;
+        pos[5][1]=12;
+        pos[0][0]=13;
+        pos[4][0]=14;
+        pos[6][0]=15;
+
+        livePieces.add(0);
+        livePieces.add(1);
+        livePieces.add(2);
+        livePieces.add(3);
+        livePieces.add(4);
+        livePieces.add(5);
+        livePieces.add(6);
+        livePieces.add(7);
+        livePieces.add(8);
+        livePieces.add(9);
+        livePieces.add(10);
+        livePieces.add(11);
+        livePieces.add(12);
+        livePieces.add(13);
+        livePieces.add(14);
+        livePieces.add(15);
+
         position = new Position(pieces, pos, livePieces, new ArrayList<>(), false, null);
         run();
 
@@ -133,7 +173,7 @@ public class Game {
 
     static Position MakeMove(Position position1, int x1, int y1, int x2, int y2) {
         boolean isTurnWhite = position1.pieces[position1.pos[x1][y1]].isWhite;
-        position1.update(isTurnWhite, -1);
+        position1.update(isTurnWhite);
         for (int i = 0; i < 8; i++)
             for (int j = 0; j < 8; j++) {
                 if (position1.pos[i][j] != null && (y1 < y2 && (x1 < x2 && i > x1 && i < x2 && j > y1 && j < y2 && x1 - y1 == i - j || x1 > x2 && i < x1 && i > x2 && j > y1 && j < y2 && x1 + y1 == i + j)
@@ -232,7 +272,7 @@ class Position {
 
     }
 
-    void update(boolean isTurnWhite, int depth) {
+    void update(boolean isTurnWhite) {
         validMoves.clear();
         boolean take = false;
         final int[][] directions = {

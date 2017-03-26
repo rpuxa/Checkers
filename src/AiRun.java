@@ -9,15 +9,17 @@ class AiRun {
     static int timeToMove = 0;
     private static int CountPositions = 0;
     private static int MAX_DEEPING = 0;
+    private static ArrayList<Point[]> legalMoves = new ArrayList<>();
 
     static void bfs() {
         Double[] movesscore = new Double[100];
         String out1 = "", out2;
         int k = 0, move;
         while (true) {
-            Game.position.update(false,-1);
-            if (Game.position.validMoves.size() == 1) {
-                Game.position = Game.MakeMove(Game.position, Game.position.validMoves.get(0)[0].x, Game.position.validMoves.get(0)[0].y, Game.position.validMoves.get(0)[1].x, Game.position.validMoves.get(0)[1].y);
+            Game.position.update(false);
+            legalMoves = new ArrayList<>(Game.position.validMoves);
+            if (legalMoves.size() == 1) {
+                Game.position = Game.MakeMove(Game.position, legalMoves.get(0)[0].x, legalMoves.get(0)[0].y, legalMoves.get(0)[1].x, legalMoves.get(0)[1].y);
                 move = 0;
             } else {
 
@@ -44,20 +46,22 @@ class AiRun {
                 System.out.println("Оценка: " + ((double) (Math.round(movesscore[resultMove] * 100000))) / 100000);
                 System.out.println("Проанализировано " + CountPositions + " позиций");
                 System.out.println("Максимальное заглубление " + MAX_DEEPING + " ходов");
-                Game.position = Game.MakeMove(Game.position, Game.position.validMoves.get(resultMove)[0].x, Game.position.validMoves.get(resultMove)[0].y, Game.position.validMoves.get(resultMove)[1].x, Game.position.validMoves.get(resultMove)[1].y);
+                Game.position = Game.MakeMove(Game.position, legalMoves.get(resultMove)[0].x, legalMoves.get(resultMove)[0].y, legalMoves.get(resultMove)[1].x, legalMoves.get(resultMove)[1].y);
                 move = resultMove;
             }
             if (k == 0)
-                out1 = "Ход: " + (char) (Game.position.validMoves.get(move)[0].x + 'a') + (Game.position.validMoves.get(move)[0].y + 1);
+                out1 = "Ход: " + (char) (legalMoves.get(move)[0].x + 'a') + (legalMoves.get(move)[0].y + 1);
             if (Game.position.movePiece == null)
                 break;
             k++;
         }
-        out2 = " " + (char) (Game.position.validMoves.get(move)[1].x + 'a') + (Game.position.validMoves.get(move)[1].y + 1) + ";";
+        out2 = " " + (char) (legalMoves.get(move)[1].x + 'a') + (legalMoves.get(move)[1].y + 1) + ";";
         System.out.println(out1 + out2);
         CountPositions = 0;
         MAX_DEEPING = 0;
     }
+
+
 
     private static Double[] analyze(Position position, int depth, int maxDepth, double alpha, int[] lp, boolean first) {
         if (depth > MAX_DEEPING)
@@ -71,8 +75,8 @@ class AiRun {
             depth--;
 
         if (depth == 0) {
-            position.update(false,0);
-            Double[] analyzedMoves = new Double[100];
+            position.update(false);
+            Double[] analyzedMoves = new Double[1000];
             double min = 300 - 0.01 * depth;
             Deque<Integer> sequence = new ArrayDeque<>();
             int i = 0;
@@ -98,10 +102,11 @@ class AiRun {
             }
             analyzedMoves[0] = min;
             hashingValidMoves(hashValidMoves.get(position.getNumPos(depth%2==1)), new ArrayList<>(sequence), position.getNumPos(depth % 2 == 1), position.validMoves.size());
+            legalMoves = new ArrayList<>(position.validMoves);
             return analyzedMoves;
         }
 
-        position.update(depth % 2 == 1,depth);
+        position.update(depth % 2 == 1);
 
         if (!position.take) {
             if (depth % 2 == 1 && depth >= 3 && lp[depth] < lp[depth - 2])
