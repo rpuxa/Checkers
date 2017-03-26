@@ -1,33 +1,39 @@
 
+import javafx.geometry.Pos;
+
 import java.util.*;
 
 
 class AiRun {
 
-    private static Map<NumPosWithDepth, Double> hashPos = new HashMap<>();
-    static Map<NumPos, ArrayList<Integer>> hashValidMoves = new HashMap<>();
-    static int timeToMove = 0;
-    private static int CountPositions = 0;
-    private static int MAX_DEEPING = 0;
-    private static ArrayList<Point[]> legalMoves = new ArrayList<>();
+    Map<NumPosWithDepth, Double> hashPos;
+    ArrayList<Point[]> legalMoves;
+    Map<NumPos, ArrayList<Integer>> hashValidMoves;
+    long timeToMove;
+    AiRun(long timeToMove){
+        this.hashPos = new HashMap<>();
+        this.legalMoves = new ArrayList<>();
+        this.hashValidMoves = new HashMap<>();
+        this.timeToMove = timeToMove;
+    }
 
-    static void bfs() {
+    ArrayList<Point[]> bfs(Position position) throws InterruptedException {
+        ArrayList<Point[]> result = new ArrayList<>();
+        Point[] resultMovePoint = new Point[2];
         Double[] movesscore = new Double[100];
-        String out1 = "", out2;
-        int k = 0, move;
+        int k = 0;
         while (true) {
-            Game.position.update(false);
-            legalMoves = new ArrayList<>(Game.position.validMoves);
+            position = update(position,false);
+            legalMoves = new ArrayList<>(position.validMoves);
             if (legalMoves.size() == 1) {
-                Game.position = Game.MakeMove(Game.position, legalMoves.get(0)[0].x, legalMoves.get(0)[0].y, legalMoves.get(0)[1].x, legalMoves.get(0)[1].y);
-                move = 0;
+                int resultMove = 0;
+                resultMovePoint[0] = new Point(legalMoves.get(resultMove)[0].x, legalMoves.get(resultMove)[0].y);
+                resultMovePoint[1] = new Point(legalMoves.get(resultMove)[1].x, legalMoves.get(resultMove)[1].y);
             } else {
 
                 label:
-                for (int i = 0; System.currentTimeMillis() - Game.st <= timeToMove; i += 2) {
-                    System.out.println("Идет анализ c глубиной: " + (i + 4));
-                    Double[] anl = analyze(new Position(Game.position), 0, i + 4, 0, new int[100], i == 0);
-                    CountPositions += hashPos.size();
+                for (int i = 0; (!Game.stop || System.currentTimeMillis() - Game.st <= timeToMove); i += 2) {
+                    Double[] anl = analyze(new Position(position), 0, i + 4, 0, new int[100], i == 0);
                     hashPos.clear();
                     for (int j = 1; j < anl.length; j++)
                         if (anl[j] != null) {
@@ -35,6 +41,8 @@ class AiRun {
                             if (movesscore[j - 1] < -250)
                                 break label;
                         }
+                        if (!(!Game.stop || System.currentTimeMillis() - Game.st <= timeToMove))
+                            break label;
                 }
                 Double min = 10000.0;
                 int resultMove = 0;
@@ -43,29 +51,21 @@ class AiRun {
                         min = movesscore[i];
                         resultMove = i;
                     }
-                System.out.println("Оценка: " + ((double) (Math.round(movesscore[resultMove] * 100000))) / 100000);
-                System.out.println("Проанализировано " + CountPositions + " позиций");
-                System.out.println("Максимальное заглубление " + MAX_DEEPING + " ходов");
-                Game.position = Game.MakeMove(Game.position, legalMoves.get(resultMove)[0].x, legalMoves.get(resultMove)[0].y, legalMoves.get(resultMove)[1].x, legalMoves.get(resultMove)[1].y);
-                move = resultMove;
+                resultMovePoint[0] = new Point(legalMoves.get(resultMove)[0].x, legalMoves.get(resultMove)[0].y);
+                resultMovePoint[1] = new Point(legalMoves.get(resultMove)[1].x, legalMoves.get(resultMove)[1].y);
             }
+            result.add(new Point[]{new Point(resultMovePoint[0].x,resultMovePoint[0].y), new Point(resultMovePoint[1].x,resultMovePoint[1].y)});
             if (k == 0)
-                out1 = "Ход: " + (char) (legalMoves.get(move)[0].x + 'a') + (legalMoves.get(move)[0].y + 1);
-            if (Game.position.movePiece == null)
+            if (position.movePiece == null)
                 break;
             k++;
         }
-        out2 = " " + (char) (legalMoves.get(move)[1].x + 'a') + (legalMoves.get(move)[1].y + 1) + ";";
-        System.out.println(out1 + out2);
-        CountPositions = 0;
-        MAX_DEEPING = 0;
+        return result;
     }
 
 
 
-    private static Double[] analyze(Position position, int depth, int maxDepth, double alpha, int[] lp, boolean first) {
-        if (depth > MAX_DEEPING)
-            MAX_DEEPING = depth;
+    private Double[] analyze(Position position, int depth, int maxDepth, double alpha, int[] lp, boolean first) {
         try {
             double m = hashPos.get(position.getNumPosWithDepth(depth % 2 == 1, depth));
             return new Double[]{m};
@@ -75,7 +75,7 @@ class AiRun {
             depth--;
 
         if (depth == 0) {
-            position.update(false);
+            position = update(position,false);
             Double[] analyzedMoves = new Double[1000];
             double min = 300 - 0.01 * depth;
             Deque<Integer> sequence = new ArrayDeque<>();
@@ -86,7 +86,7 @@ class AiRun {
                 int[] lpr = lp.clone();
                 lpr[depth] = countLP(new Position(position));
                 double result = analyze(Game.MakeMove(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y), 1, maxDepth, min, lpr, first)[0];
-                if (System.currentTimeMillis() - Game.st >= timeToMove && !first) {
+                if (!Game.stop || System.currentTimeMillis() - Game.st >= Game.timeToMove && !first) {
                     analyzedMoves[0] = min;
                     return analyzedMoves;
                 }
@@ -106,7 +106,7 @@ class AiRun {
             return analyzedMoves;
         }
 
-        position.update(depth % 2 == 1);
+        position = update(position, depth % 2 == 1);
 
         if (!position.take) {
             if (depth % 2 == 1 && depth >= 3 && lp[depth] < lp[depth - 2])
@@ -151,7 +151,7 @@ class AiRun {
                 if (max > 200)
                     break;
             }
-            if (System.currentTimeMillis() - Game.st >= timeToMove && !first)
+            if (!Game.stop || System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)
                 break;
         }
         hashingValidMoves(hashValidMoves.get(position.getNumPos(depth%2==1)), new ArrayList<>(sequence), position.getNumPos(depth % 2 == 1), position.validMoves.size());
@@ -159,7 +159,115 @@ class AiRun {
         return new Double[]{(depth % 2 == 0) ? min : max};
     }
 
-    private static void hashingValidMoves(ArrayList<Integer> AfterSequence, ArrayList<Integer> sequence, NumPos numPos, int size) {
+        Position update(Position position, boolean isTurnWhite) {
+        Piece[] pieces = new Piece[24];
+        Integer[][] pos = new Integer[Game.BOARD_SIZE][Game.BOARD_SIZE];
+        ArrayList<Integer> livePieces;
+        ArrayList<Point[]> validMoves;
+        Point movePiece;
+        for (int i = 0; i < pieces.length; ++i)
+            if (position.pieces[i] != null)
+                pieces[i] = new Piece(position.pieces[i].isWhite, position.pieces[i].isQueen);
+        for (int i = 0; i < Game.BOARD_SIZE; ++i) {
+            pos[i] = position.pos[i].clone();
+        }
+        livePieces = new ArrayList<>(position.livePieces);
+        validMoves = new ArrayList<>(position.validMoves);
+        boolean take;
+        if (position.movePiece != null)
+            movePiece = new Point(position.movePiece.x, position.movePiece.y);
+        else
+            movePiece = null;
+
+        validMoves.clear();
+        take = false;
+        final int[][] directions = {
+                {-1, -1}, {1, 1}, {-1, 1}, {1, -1}
+        };
+        for (Integer pieceNumber :
+                livePieces) {
+            int x = -1, y = 0;
+            if (movePiece == null) {
+                label:
+                for (int i = 0; i < Game.BOARD_SIZE; i++)
+                    for (int j = 0; j < Game.BOARD_SIZE; j++)
+                        if (pieces[pieceNumber].isWhite == isTurnWhite && Objects.equals(pos[i][j], pieceNumber)) {
+                            x = i;
+                            y = j;
+                            break label;
+                        }
+            } else {
+                x = movePiece.x;
+                y = movePiece.y;
+            }
+            if (x != -1)
+                if (!pieces[pos[x][y]].isQueen) {
+                    for (int[] direction : directions)
+                        if (isInBoard(x + direction[0], y + direction[1]))
+                            if ((isTurnWhite && direction[1] == 1 || !isTurnWhite && direction[1] == -1) && !take && pos[x + direction[0]][y + direction[1]] == null) {
+                                validMoves.add(new Point[]{new Point(x, y), new Point(x + direction[0], y + direction[1])});
+                            } else if (pos[x + direction[0]][y + direction[1]] != null && isInBoard(x + 2 * direction[0], y + 2 * direction[1]) && pieces[pos[x][y]].isWhite == !pieces[pos[x + direction[0]][y + direction[1]]].isWhite && pos[x + 2 * direction[0]][y + 2 * direction[1]] == null) {
+                                if (!take)
+                                    validMoves.clear();
+                                take = true;
+                                validMoves.add(new Point[]{new Point(x, y), new Point(x + 2 * direction[0], y + 2 * direction[1])});
+                            }
+                } else {
+                    for (int[] direction : directions) {
+                        boolean isQueenTake = false, isQueenMultitake = false;
+                        ArrayList<Point[]> validMovesQueen = new ArrayList<>();
+                        for (int i = 1; isInBoard(x + i * direction[0], y + i * direction[1]); i++) {
+                            if (pos[x + i * direction[0]][y + i * direction[1]] != null && (isQueenTake || isTurnWhite == pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite || (pos[x + i * direction[0]][y + i * direction[1]] != null
+                                    && (!isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]) || pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] != null))))
+                                break;
+                            else if (!isQueenTake && !take && pos[x + i * direction[0]][y + i * direction[1]] == null) {
+                                validMovesQueen.add(new Point[]{new Point(x, y), new Point(x + i * direction[0], y + i * direction[1])});
+                            } else if (!isQueenMultitake && isQueenTake && pos[x + i * direction[0]][y + i * direction[1]] == null) {
+                                isQueenMultitake = isQueenMultitake || takeQueen(new Position(position), x + i * direction[0], y + i * direction[1], direction, isTurnWhite);
+                                if (isQueenMultitake)
+                                    validMovesQueen.clear();
+                                validMovesQueen.add(new Point[]{new Point(x, y), new Point(x + i * direction[0], y + i * direction[1])});
+
+                            } else if (isQueenMultitake && isQueenTake && pos[x + i * direction[0]][y + i * direction[1]] == null && takeQueen(new Position(position),x + i * direction[0], y + i * direction[1], direction, isTurnWhite)) {
+                                validMovesQueen.add(new Point[]{new Point(x, y), new Point(x + i * direction[0], y + i * direction[1])});
+                            } else if (pos[x + i * direction[0]][y + i * direction[1]] != null && !isQueenTake && pieces[pos[x][y]].isWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]) && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null) {
+                                isQueenTake = true;
+                                if (!take)
+                                    validMoves.clear();
+                                take = true;
+                                validMovesQueen.clear();
+                            }
+                        }
+                        validMoves.addAll(0, validMovesQueen);
+                    }
+                }
+            if (movePiece != null)
+                break;
+        }
+        ArrayList<Integer> sequence = hashValidMoves.get(position.getNumPos(isTurnWhite));
+        if (sequence!=null) {
+            ArrayList<Point[]> moves = new ArrayList<>();
+            for (int i : sequence)
+                moves.add(validMoves.get(i));
+            validMoves = new ArrayList<>(moves);
+        }
+        return new Position(pieces,pos,livePieces,validMoves,take,movePiece);
+    }
+
+    static boolean isInBoard(int x, int y) {
+        return (x >= 0 && x <= 7 && y >= 0 && y <= 7);
+    }
+
+    static boolean takeQueen(Position position, int x, int y, int[] direction2, boolean isTurnWhite) {
+        int[][] directions = {{-direction2[0], direction2[1]}, {direction2[0], -direction2[1]}};
+        for (int[] direction : directions)
+            for (int i = 1; isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]); i++)
+                if (position.pos[x + i * direction[0]][y + i * direction[1]] != null)
+                    return isTurnWhite == !position.pieces[position.pos[x + i * direction[0]][y + i * direction[1]]].isWhite && position.pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null;
+        return false;
+    }
+
+    private void hashingValidMoves(ArrayList<Integer> AfterSequence, ArrayList<Integer> sequence, NumPos numPos, int size) {
         if (AfterSequence!=null) {
             ArrayList<Integer> beforeSequence = new ArrayList<>();
             for (int i : sequence)
@@ -181,7 +289,7 @@ class AiRun {
         }
     }
 
-    private static double Evaluate(Position position) {
+    private double Evaluate(Position position) {
         final double costPiece = 1;
         final double costQueen = 3 * costPiece;
         final double costOfCell = -0.002;
@@ -243,7 +351,7 @@ class AiRun {
         return anl;
     }
 
-    private static boolean passToQueen(Position position, int x, int y) {
+    private boolean passToQueen(Position position, int x, int y) {
         boolean pass = true;
         if (position.pieces[position.pos[x][y]].isWhite) {
             for (int i = 0; i <= 7; i++)
@@ -274,7 +382,7 @@ class AiRun {
         }
     }
 
-    private static int countLP(Position position) {
+    private int countLP(Position position) {
         int count = 0;
         for (int i = 0; i < position.livePieces.size(); i++) {
             count += (position.pieces[position.livePieces.get(i)].isWhite) ? 1 : -1;
@@ -310,6 +418,7 @@ class NumPos{
 
         return hash;
     }
+
 }
 
 class NumPosWithDepth{

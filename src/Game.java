@@ -1,32 +1,43 @@
-
 import java.util.*;
 
 public class Game {
 
     static Position position;
-    static long st;
+    static long st = System.currentTimeMillis();
     final static int BOARD_SIZE = 8;
+    static ArrayList<Thread> threads = new ArrayList<>();
+    static ArrayList<NumPos> threadsNum = new ArrayList<>();
+    static ArrayList<ArrayList<Point[]>> threadResults = new ArrayList<>();
+    static int threadsCount = 0;
+    static boolean stop = false;
+    static int timeToMove = 0;
 
-    private static void run() {
+    private static void run() throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
+        label:
         while (true) {
             while (true) {
                 position.update(true);
                 if (position.validMoves.size()==0){
                     System.out.println("Компьютер победил!");
                     String n = scanner.next();
-                    break;
+                    break label;
                 }
-                String fromPosition = scanner.next();
-                if (!Objects.equals(fromPosition, "0")) {
+                threadResults.clear();
+                ThreadsRunner(new Position(position));
+                int x1,x2,y1,y2;
+                while (true) {
+                    String fromPosition = scanner.next();
                     String toPosition = scanner.next();
                     char[] fromPositionChars = fromPosition.toCharArray();
                     char[] toPositionChars = toPosition.toCharArray();
-                    int x1 = (int) fromPositionChars[0] - 'a', y1 = (int) fromPositionChars[1] - '1', x2 = (int) toPositionChars[0] - 'a', y2 = (int) toPositionChars[1] - '1';
-                    if (!MakeLegalMove(x1,y1,x2,y2)) {
+                    x1 = (int) fromPositionChars[0] - 'a'; y1 = (int) fromPositionChars[1] - '1'; x2 = (int) toPositionChars[0] - 'a'; y2 = (int) toPositionChars[1] - '1';
+                    if (!MakeLegalMove(x1, y1, x2, y2)) {
                         System.out.println("Неверный ход!");
-                        continue;
                     }
+                    else
+                        break;
+                }
                     position = MakeMove(position, x1, y1, x2, y2);
                     if (!position.take)
                         break;
@@ -51,11 +62,13 @@ public class Game {
                         if (!position.take(x2, y2, directions))
                             break;
                     }
-                } else
-                    break;
             }
             st = System.currentTimeMillis();
-            AiRun.bfs();
+            ArrayList<Point[]> move = ThreadsStop(position);
+            for (Point[] moves : move)
+                Game.position = MakeMove(position,moves[0].x,moves[0].y,moves[1].x,moves[1].y);
+
+            System.out.println("Ход: " + (char)(move.get(0)[0].x+'a') + (move.get(0)[0].y+1) +" "+ (char)(move.get(move.size()-1)[1].x+'a') + (move.get(move.size()-1)[1].y+1));
             System.out.println((double)((System.currentTimeMillis() - st)) / 1000 + " сек.");
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
@@ -71,21 +84,63 @@ public class Game {
         return false;
     }
 
-    public static void main(String[] args) {
+    private static void ThreadsRunner(Position position) throws InterruptedException {
+        stop=false;
+        position.update(true);
+        for (int i = 0; i < position.validMoves.size(); i++) {
+            Point[] move = position.validMoves.get(i).clone();
+            Position position1 = new Position(MakeMove(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y));
+            if (position1.movePiece!=null)
+                ThreadsRunner(new Position(position1));
+            AiRun aiRun = new AiRun(timeToMove);
+            threads.add(threadsCount, new Thread(() -> {
+                try {
+                    threadResults.add(aiRun.bfs(new Position(position1)));
+                } catch (InterruptedException ignored) {
+                }
+            }));
+            threadsNum.add(threadsCount,position1.getNumPos(false));
+           threads.get(threadsCount).start();
+           Thread.sleep(100);
+            threadsCount++;
+        }
+    }
+
+    private static ArrayList<Point[]> ThreadsStop(Position position) throws InterruptedException {
+        stop=true;
+        int threadNumber = 0;
+        NumPos numPos = position.getNumPos(false);
+        Thread thread = threads.get(0);
+        for (int i = 0; i < threadsCount; i++)
+            if (!threadsNum.get(i).equals(numPos)) {
+                threads.get(i).interrupt();
+            }
+            else {
+                threadNumber = i;
+                thread = threads.get(i);
+            }
+        threads.clear();
+        threadsNum.clear();
+        threadsCount = 0;
+        thread.join();
+        return threadResults.get(threadNumber);
+    }
+
+    public static void main(String[] args) throws InterruptedException {
 
         Scanner scanner = new Scanner(System.in);
         System.out.println("Запуск программы...");
         System.out.println("Время на ход (в секундах):");
         try {
-            AiRun.timeToMove = Integer.parseInt(args[0]) * 1000;
+            timeToMove = Integer.parseInt(args[0]) * 1000;
             System.out.println(args[0]);
         }
         catch (ArrayIndexOutOfBoundsException e){
-                AiRun.timeToMove = scanner.nextInt() * 1000;
+                timeToMove = scanner.nextInt() * 1000;
         }
         System.out.println("Ваш ход:");
 
-/*
+
       Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[BOARD_SIZE][BOARD_SIZE];
         ArrayList<Integer> livePieces = new ArrayList<>();
@@ -111,7 +166,7 @@ public class Game {
                 else
                     pos[x - 1][y] = i;
                 i++;
-            }*/
+            }
      /*  Piece[] pieces = {new Piece(false,true),new Piece(false,true), new Piece(false,false),new Piece(false,false),new Piece(true,false), new Piece(true,true)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
@@ -128,7 +183,7 @@ public class Game {
         livePieces.add(4,4);
         livePieces.add(5,5);
 */
-        Piece[] pieces = {new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false)};
+ /*       Piece[] pieces = {new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
         pos[1][7]=0;
@@ -164,7 +219,18 @@ public class Game {
         livePieces.add(13);
         livePieces.add(14);
         livePieces.add(15);
-
+*/
+   /*     Piece[] pieces = {new Piece(false,true),new Piece(false,true), new Piece(false,true),new Piece(true,true)};
+        Integer[][] pos = new Integer[8][8];
+        ArrayList<Integer> livePieces = new ArrayList<>();
+        pos[4][4]=0;
+        pos[4][0]=1;
+        pos[2][6]=2;
+        pos[4][2]=3;
+        livePieces.add(0);
+        livePieces.add(1);
+        livePieces.add(2);
+        livePieces.add(3);*/
         position = new Position(pieces, pos, livePieces, new ArrayList<>(), false, null);
         run();
 
@@ -274,7 +340,7 @@ class Position {
 
     void update(boolean isTurnWhite) {
         validMoves.clear();
-        boolean take = false;
+        take = false;
         final int[][] directions = {
                 {-1, -1}, {1, 1}, {-1, 1}, {1, -1}
         };
@@ -297,10 +363,10 @@ class Position {
             if (x != -1)
                 if (!pieces[pos[x][y]].isQueen) {
                     for (int[] direction : directions)
-                        if (isInBoard(x + direction[0], y + direction[1]))
+                        if (AiRun.isInBoard(x + direction[0], y + direction[1]))
                             if ((isTurnWhite && direction[1] == 1 || !isTurnWhite && direction[1] == -1) && !take && pos[x + direction[0]][y + direction[1]] == null) {
                                 validMoves.add(new Point[]{new Point(x, y), new Point(x + direction[0], y + direction[1])});
-                            } else if (pos[x + direction[0]][y + direction[1]] != null && isInBoard(x + 2 * direction[0], y + 2 * direction[1]) && pieces[pos[x][y]].isWhite == !pieces[pos[x + direction[0]][y + direction[1]]].isWhite && pos[x + 2 * direction[0]][y + 2 * direction[1]] == null) {
+                            } else if (pos[x + direction[0]][y + direction[1]] != null && AiRun.isInBoard(x + 2 * direction[0], y + 2 * direction[1]) && pieces[pos[x][y]].isWhite == !pieces[pos[x + direction[0]][y + direction[1]]].isWhite && pos[x + 2 * direction[0]][y + 2 * direction[1]] == null) {
                                 if (!take)
                                     validMoves.clear();
                                 take = true;
@@ -310,9 +376,9 @@ class Position {
                     for (int[] direction : directions) {
                         boolean isQueenTake = false, isQueenMultitake = false;
                         ArrayList<Point[]> validMovesQueen = new ArrayList<>();
-                        for (int i = 1; isInBoard(x + i * direction[0], y + i * direction[1]); i++) {
+                        for (int i = 1; AiRun.isInBoard(x + i * direction[0], y + i * direction[1]); i++) {
                             if (pos[x + i * direction[0]][y + i * direction[1]] != null && (isQueenTake || isTurnWhite == pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite || (pos[x + i * direction[0]][y + i * direction[1]] != null
-                                    && (!isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]) || pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] != null))))
+                                    && (!AiRun.isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]) || pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] != null))))
                                 break;
                             else if (!isQueenTake && !take && pos[x + i * direction[0]][y + i * direction[1]] == null) {
                                 validMovesQueen.add(new Point[]{new Point(x, y), new Point(x + i * direction[0], y + i * direction[1])});
@@ -324,7 +390,7 @@ class Position {
 
                             } else if (isQueenMultitake && isQueenTake && pos[x + i * direction[0]][y + i * direction[1]] == null && takeQueen(x + i * direction[0], y + i * direction[1], direction, isTurnWhite)) {
                                 validMovesQueen.add(new Point[]{new Point(x, y), new Point(x + i * direction[0], y + i * direction[1])});
-                            } else if (pos[x + i * direction[0]][y + i * direction[1]] != null && !isQueenTake && pieces[pos[x][y]].isWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]) && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null) {
+                            } else if (pos[x + i * direction[0]][y + i * direction[1]] != null && !isQueenTake && pieces[pos[x][y]].isWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && AiRun.isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]) && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null) {
                                 isQueenTake = true;
                                 if (!take)
                                     validMoves.clear();
@@ -338,24 +404,12 @@ class Position {
             if (movePiece != null)
                 break;
         }
-        this.take = take;
-        ArrayList<Integer> sequence = AiRun.hashValidMoves.get(getNumPos(isTurnWhite));
-        if (sequence!=null) {
-            ArrayList<Point[]> moves = new ArrayList<>();
-            for (int i : sequence)
-                moves.add(validMoves.get(i));
-            validMoves = new ArrayList<>(moves);
-        }
     }
 
-    private boolean isInBoard(int x, int y) {
-        return (x >= 0 && x <= 7 && y >= 0 && y <= 7);
-    }
-
-    private boolean takeQueen(int x, int y, int[] direction2, boolean isTurnWhite) {
+    boolean takeQueen(int x, int y, int[] direction2, boolean isTurnWhite) {
         int[][] directions = {{-direction2[0], direction2[1]}, {direction2[0], -direction2[1]}};
         for (int[] direction : directions)
-            for (int i = 1; isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]); i++)
+            for (int i = 1; AiRun.isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]); i++)
                 if (pos[x + i * direction[0]][y + i * direction[1]] != null)
                     return isTurnWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null;
         return false;
@@ -364,14 +418,14 @@ class Position {
     boolean take(int x, int y, int[][] directions) {
         if (pieces[pos[x][y]].isQueen) {
             for (int[] direction : directions)
-                for (int i = 1; isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]); i++)
+                for (int i = 1; AiRun.isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]); i++)
                     if (pos[x + i * direction[0]][y + i * direction[1]] != null) {
                         return pieces[pos[x][y]].isWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null;
                     }
         } else {
             for (int[] direction : directions)
-                if (isInBoard(x + direction[0], y + direction[1]))
-                    if (pos[x + direction[0]][y + direction[1]] != null && isInBoard(x + 2 * direction[0], y + 2 * direction[1]) && pieces[pos[x][y]].isWhite == !pieces[pos[x + direction[0]][y + direction[1]]].isWhite && pos[x + 2 * direction[0]][y + 2 * direction[1]] == null)
+                if (AiRun.isInBoard(x + direction[0], y + direction[1]))
+                    if (pos[x + direction[0]][y + direction[1]] != null && AiRun.isInBoard(x + 2 * direction[0], y + 2 * direction[1]) && pieces[pos[x][y]].isWhite == !pieces[pos[x + direction[0]][y + direction[1]]].isWhite && pos[x + 2 * direction[0]][y + 2 * direction[1]] == null)
                         return true;
         }
         return false;
