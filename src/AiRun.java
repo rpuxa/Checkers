@@ -1,6 +1,3 @@
-
-import javafx.geometry.Pos;
-
 import java.util.*;
 
 
@@ -18,7 +15,8 @@ class AiRun {
     }
 
     ArrayList<Point[]> bfs(Position position) {
-            ArrayList<Point[]> result = new ArrayList<>();
+        Double min =10000.0;
+        ArrayList<Point[]> result = new ArrayList<>();
             Point[] resultMovePoint = new Point[2];
             Double[] movesscore = new Double[100];
             while (true) {
@@ -44,7 +42,7 @@ class AiRun {
                                     break label;
                             }
                     }
-                    Double min = 10000.0;
+                    min = 10000.0;
                     int resultMove = 0;
                     for (int i = 0; movesscore[i] != null; i++)
                         if (movesscore[i] < min) {
@@ -60,11 +58,14 @@ class AiRun {
                         break;
             }
             if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName())) {
+                Game.score = min;
                 return result;
             }
         while (Game.threadNumber==-1) {
             System.out.print("");
         }
+        if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))
+            Game.score = min;
             return new ArrayList<>(result);
     }
 

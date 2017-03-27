@@ -11,6 +11,7 @@ public class Game {
     static int threadNumber = -1;
     static int threadsCount = 0;
     static int timeToMove = 0;
+    static Double score = 0.0;
     static Thread timer;
 
     private static void run() throws InterruptedException {
@@ -28,19 +29,19 @@ public class Game {
                 threadResult.clear();
                 ThreadsRunner(new Position(position));
                 int x1,x2,y1,y2;
-                while (true) {
-                    String fromPosition = scanner.next();
-                    String toPosition = scanner.next();
-                    char[] fromPositionChars = fromPosition.toCharArray();
-                    char[] toPositionChars = toPosition.toCharArray();
-                    x1 = (int) fromPositionChars[0] - 'a'; y1 = (int) fromPositionChars[1] - '1'; x2 = (int) toPositionChars[0] - 'a'; y2 = (int) toPositionChars[1] - '1';
-                    if (!MakeLegalMove(x1, y1, x2, y2)) {
-                        System.out.println("Неверный ход!");
+                Move.position = new Position(position);
+                    Move.block = false;
+                    while (Move.to==null || !Move.block){
+                        Thread.sleep(100);
                     }
-                    else
-                        break;
-                }
+                    x1 = Move.from.x;
+                    y1 = Move.from.y;
+                    x2 = Move.to.x;
+                    y2 = Move.to.y;
+                    Move.from = null;
+                    Move.to = null;
                     position = MakeMove(position, x1, y1, x2, y2);
+                    Move.replacePosition(new Position(position));
                     if (!position.take)
                         break;
                     if (x1 < x2 && y1 < y2) {
@@ -65,11 +66,12 @@ public class Game {
                             break;
                     }
             }
+            System.out.println("Идет анализ...");
             ThreadsStop(new Position(position));
-            System.out.println(threadResult.size()+" SIZe");
             for (Point[] moves : threadResult)
                 Game.position = MakeMove(position,moves[0].x,moves[0].y,moves[1].x,moves[1].y);
             System.out.println("Ход: " + (char)(threadResult.get(0)[0].x+'a') + (threadResult.get(0)[0].y+1) +" "+ (char)(threadResult.get(threadResult.size()-1)[1].x+'a') + (threadResult.get(threadResult.size()-1)[1].y+1));
+            System.out.println("Оценка: " + score);
             System.out.println((double)((System.currentTimeMillis() - st)) / 1000 + " сек.");
             timer = new Thread(() -> {
                 try {
@@ -82,10 +84,12 @@ public class Game {
             timer.start();
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
+            Move.replacePosition(new Position(position));
         }
     }
 
-    private static boolean MakeLegalMove(int x1,int y1,int x2, int y2) {
+    static boolean MakeLegalMove(Position position, int x1,int y1,int x2, int y2) {
+        position.update(true);
         for (int i = 0; i < position.validMoves.size(); i++) {
             Point[] points = position.validMoves.get(i).clone();
             if (points[0].x==x1 && points[0].y==y1 && points[1].x==x2 && points[1].y==y2)
@@ -249,6 +253,9 @@ public class Game {
         livePieces.add(2);
         livePieces.add(3);*/
         position = new Position(pieces, pos, livePieces, new ArrayList<>(), false, null);
+        new Window().setVisible(true);
+        Move.position = new Position(position);
+        Move.replacePosition(new Position(position));
         run();
 
     }
