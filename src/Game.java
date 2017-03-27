@@ -7,15 +7,17 @@ public class Game {
     final static int BOARD_SIZE = 8;
     static ArrayList<Thread> threads = new ArrayList<>();
     static ArrayList<NumPos> threadsNum = new ArrayList<>();
-    static ArrayList<ArrayList<Point[]>> threadResults = new ArrayList<>();
+    static ArrayList<Point[]> threadResult = new ArrayList<>();
+    static int threadNumber = -1;
     static int threadsCount = 0;
-    static boolean stop = false;
     static int timeToMove = 0;
+    static Thread timer;
 
     private static void run() throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
         label:
         while (true) {
+            Thread.sleep(500);
             while (true) {
                 position.update(true);
                 if (position.validMoves.size()==0){
@@ -23,7 +25,7 @@ public class Game {
                     String n = scanner.next();
                     break label;
                 }
-                threadResults.clear();
+                threadResult.clear();
                 ThreadsRunner(new Position(position));
                 int x1,x2,y1,y2;
                 while (true) {
@@ -63,13 +65,21 @@ public class Game {
                             break;
                     }
             }
-            st = System.currentTimeMillis();
-            ArrayList<Point[]> move = ThreadsStop(position);
-            for (Point[] moves : move)
+            ThreadsStop(new Position(position));
+            System.out.println(threadResult.size()+" SIZe");
+            for (Point[] moves : threadResult)
                 Game.position = MakeMove(position,moves[0].x,moves[0].y,moves[1].x,moves[1].y);
-
-            System.out.println("Ход: " + (char)(move.get(0)[0].x+'a') + (move.get(0)[0].y+1) +" "+ (char)(move.get(move.size()-1)[1].x+'a') + (move.get(move.size()-1)[1].y+1));
+            System.out.println("Ход: " + (char)(threadResult.get(0)[0].x+'a') + (threadResult.get(0)[0].y+1) +" "+ (char)(threadResult.get(threadResult.size()-1)[1].x+'a') + (threadResult.get(threadResult.size()-1)[1].y+1));
             System.out.println((double)((System.currentTimeMillis() - st)) / 1000 + " сек.");
+            timer = new Thread(() -> {
+                try {
+                    while (true) {
+                        Thread.sleep(10);
+                        Game.st = System.currentTimeMillis();
+                    }
+                } catch (InterruptedException ignored) {}
+            });
+            timer.start();
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
         }
@@ -85,7 +95,6 @@ public class Game {
     }
 
     private static void ThreadsRunner(Position position) throws InterruptedException {
-        stop=false;
         position.update(true);
         for (int i = 0; i < position.validMoves.size(); i++) {
             Point[] move = position.validMoves.get(i).clone();
@@ -93,12 +102,11 @@ public class Game {
             if (position1.movePiece!=null)
                 ThreadsRunner(new Position(position1));
             AiRun aiRun = new AiRun(timeToMove);
-            threads.add(threadsCount, new Thread(() -> {
-                try {
-                    threadResults.add(aiRun.bfs(new Position(position1)));
-                } catch (InterruptedException ignored) {
-                }
-            }));
+            threads.add(new Thread(() -> {
+                    ArrayList<Point[]> result = new ArrayList<>(aiRun.bfs(new Position(position1)));
+                if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))
+                    threadResult = new ArrayList<>(result);
+            },threadsCount+" "));
             threadsNum.add(threadsCount,position1.getNumPos(false));
            threads.get(threadsCount).start();
            Thread.sleep(100);
@@ -106,28 +114,36 @@ public class Game {
         }
     }
 
-    private static ArrayList<Point[]> ThreadsStop(Position position) throws InterruptedException {
-        stop=true;
-        int threadNumber = 0;
+    private static void ThreadsStop(Position position) throws InterruptedException {
         NumPos numPos = position.getNumPos(false);
         Thread thread = threads.get(0);
         for (int i = 0; i < threadsCount; i++)
-            if (!threadsNum.get(i).equals(numPos)) {
-                threads.get(i).interrupt();
-            }
-            else {
-                threadNumber = i;
+            if (threadsNum.get(i).equals(numPos)) {
                 thread = threads.get(i);
+                char[] name = thread.getName().toCharArray();
+                threadNumber = name[0]-'0';
+                break;
             }
         threads.clear();
         threadsNum.clear();
         threadsCount = 0;
+        timer.interrupt();
         thread.join();
-        return threadResults.get(threadNumber);
+        Thread.sleep(10);
+        threadNumber = -1;
     }
 
     public static void main(String[] args) throws InterruptedException {
-
+        timer = new Thread(() -> {
+            try {
+                while (true) {
+                    Thread.sleep(10);
+                    Game.st = System.currentTimeMillis();
+                    System.out.print("");
+                }
+            } catch (InterruptedException ignored) {}
+        });
+        timer.start();
         Scanner scanner = new Scanner(System.in);
         System.out.println("Запуск программы...");
         System.out.println("Время на ход (в секундах):");
@@ -167,6 +183,7 @@ public class Game {
                     pos[x - 1][y] = i;
                 i++;
             }
+
      /*  Piece[] pieces = {new Piece(false,true),new Piece(false,true), new Piece(false,false),new Piece(false,false),new Piece(true,false), new Piece(true,true)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
