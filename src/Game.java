@@ -13,64 +13,59 @@ public class Game {
     static int timeToMove = 0;
     static Double score = 0.0;
     static Thread timer;
+    static Map<NumPos, Double[]> hashPos = new HashMap<>();
+    static int movesInGame = 0;
 
     private static void run() throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
         label:
         while (true) {
+            Move.block = false;
+            movesInGame+=2;
+            new Thread(() -> {
+                for (NumPos key:hashPos.keySet()) {
+                    if (hashPos.get(key)[2]<(double)movesInGame)
+                        hashPos.remove(key);
+                }
+            });
             Thread.sleep(500);
+            threadResult.clear();
+            ThreadsRunner(new Position(position));
             while (true) {
+                Move.block = false;
                 position.update(true);
                 if (position.validMoves.size()==0){
                     System.out.println("Компьютер победил!");
                     String n = scanner.next();
                     break label;
                 }
-                threadResult.clear();
-                ThreadsRunner(new Position(position));
                 int x1,x2,y1,y2;
                 Move.position = new Position(position);
-                    Move.block = false;
+                System.out.println("Ждем хода...");
                     while (Move.to==null || !Move.block){
                         Thread.sleep(100);
                     }
+                System.out.println("Ходим...");
                     x1 = Move.from.x;
                     y1 = Move.from.y;
                     x2 = Move.to.x;
                     y2 = Move.to.y;
-                    Move.from = null;
-                    Move.to = null;
                     position = MakeMove(position, x1, y1, x2, y2);
+                    if (position.movePiece!=null)
+                        Move.from = new Point(Move.to.x,Move.to.y);
+                    else
+                        Move.from = null;
+                    Move.to = null;
                     Move.replacePosition(new Position(position));
-                    if (!position.take)
+                    System.out.println("Обязательный ход: " + ((position.movePiece!=null) ? (position.movePiece.x+" "+position.movePiece.y):"нет"));
+                    if (position.movePiece==null)
                         break;
-                    if (x1 < x2 && y1 < y2) {
-                        int[][] directions = {
-                                {1, 1}, {-1, 1}, {1, -1}};
-                        if (!position.take(x2, y2, directions))
-                            break;
-                    } else if (x1 > x2 && y1 < y2) {
-                        int[][] directions = {
-                                {-1, -1}, {1, 1}, {-1, 1}};
-                        if (!position.take(x2, y2, directions))
-                            break;
-                    } else if (x1 > x2 && y1 > y2) {
-                        int[][] directions = {
-                                {-1, -1}, {-1, 1}, {1, -1}};
-                        if (!position.take(x2, y2, directions))
-                            break;
-                    } else if (x1 < x2 && y1 > y2) {
-                        int[][] directions = {
-                                {-1, -1}, {1, 1}, {1, -1}};
-                        if (!position.take(x2, y2, directions))
-                            break;
-                    }
             }
             System.out.println("Идет анализ...");
             ThreadsStop(new Position(position));
             for (Point[] moves : threadResult)
                 Game.position = MakeMove(position,moves[0].x,moves[0].y,moves[1].x,moves[1].y);
-            System.out.println("Ход: " + (char)(threadResult.get(0)[0].x+'a') + (threadResult.get(0)[0].y+1) +" "+ (char)(threadResult.get(threadResult.size()-1)[1].x+'a') + (threadResult.get(threadResult.size()-1)[1].y+1));
+                System.out.println("Ход: " + (char) (threadResult.get(0)[0].x + 'a') + (threadResult.get(0)[0].y + 1) + " " + (char) (threadResult.get(threadResult.size() - 1)[1].x + 'a') + (threadResult.get(threadResult.size() - 1)[1].y + 1));
             System.out.println("Оценка: " + score);
             System.out.println((double)((System.currentTimeMillis() - st)) / 1000 + " сек.");
             timer = new Thread(() -> {
@@ -84,6 +79,7 @@ public class Game {
             timer.start();
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
+            System.out.println(hashPos.size());
             Move.replacePosition(new Position(position));
         }
     }
@@ -105,16 +101,18 @@ public class Game {
             Position position1 = new Position(MakeMove(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y));
             if (position1.movePiece!=null)
                 ThreadsRunner(new Position(position1));
-            AiRun aiRun = new AiRun(timeToMove);
-            threads.add(new Thread(() -> {
+            else {
+                AiRun aiRun = new AiRun(timeToMove);
+                threads.add(threadsCount,new Thread(() -> {
                     ArrayList<Point[]> result = new ArrayList<>(aiRun.bfs(new Position(position1)));
-                if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))
-                    threadResult = new ArrayList<>(result);
-            },threadsCount+" "));
-            threadsNum.add(threadsCount,position1.getNumPos(false));
-           threads.get(threadsCount).start();
-           Thread.sleep(100);
-            threadsCount++;
+                    if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))
+                        threadResult = new ArrayList<>(result);
+                }, threadsCount + " "));
+                threadsNum.add(threadsCount, position1.getNumPos(false));
+              //  threads.get(threadsCount).start();
+                Thread.sleep(100);
+                threadsCount++;
+            }
         }
     }
 
@@ -124,15 +122,20 @@ public class Game {
         for (int i = 0; i < threadsCount; i++)
             if (threadsNum.get(i).equals(numPos)) {
                 thread = threads.get(i);
-                char[] name = thread.getName().toCharArray();
-                threadNumber = name[0]-'0';
+                String name = thread.getName();
+                name = name.replaceAll(" ","");
+                threadNumber = Integer.parseInt(name);
                 break;
             }
         threads.clear();
         threadsNum.clear();
         threadsCount = 0;
+        while (timer.isAlive())
         timer.interrupt();
+        thread.start();
+        System.out.println("WAIT");
         thread.join();
+        System.out.println("Continue");
         Thread.sleep(10);
         threadNumber = -1;
     }
@@ -158,10 +161,7 @@ public class Game {
         catch (ArrayIndexOutOfBoundsException e){
                 timeToMove = scanner.nextInt() * 1000;
         }
-        System.out.println("Ваш ход:");
-
-
-      Piece[] pieces = new Piece[24];
+    /*  Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[BOARD_SIZE][BOARD_SIZE];
         ArrayList<Integer> livePieces = new ArrayList<>();
         for (int i = 0; i <= 23; i++)
@@ -186,44 +186,41 @@ public class Game {
                 else
                     pos[x - 1][y] = i;
                 i++;
-            }
+            }*/
 
-     /*  Piece[] pieces = {new Piece(false,true),new Piece(false,true), new Piece(false,false),new Piece(false,false),new Piece(true,false), new Piece(true,true)};
+     /*  Piece[] pieces = {new Piece(false,false),new Piece(false,false),new Piece(false,false), new Piece(true,false),new Piece(true,false)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
-        pos[6][0]=0;
-        pos[4][0]=1;
-        pos[7][5]=2;
-        pos[6][6]=3;
-        pos[0][2]=4;
-        pos[0][4]=5;
-        livePieces.add(0,0);
-        livePieces.add(1,1);
-        livePieces.add(2,2);
-        livePieces.add(3,3);
-        livePieces.add(4,4);
-        livePieces.add(5,5);
-*/
- /*       Piece[] pieces = {new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false)};
+        pos[7][7]=0;
+        pos[2][2]=1;
+        pos[4][4]=2;
+        pos[0][0]=3;
+        pos[2][0]=4;
+        livePieces.add(0);
+        livePieces.add(1);
+        livePieces.add(2);
+        livePieces.add(3);
+        livePieces.add(4);
+        */
+
+        Piece[] pieces = {new Piece(false,false),new Piece(false,false),new Piece(false,false), new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
         pos[1][7]=0;
         pos[3][7]=1;
-        pos[0][6]=2;
-        pos[6][6]=3;
-        pos[1][5]=4;
-        pos[3][5]=5;
-        pos[7][5]=6;
-        pos[2][4]=7;
-        pos[3][3]=8;
-        pos[7][3]=9;
-        pos[0][2]=10;
-        pos[4][2]=11;
-        pos[5][1]=12;
-        pos[0][0]=13;
-        pos[4][0]=14;
-        pos[6][0]=15;
-
+        pos[5][7]=2;
+        pos[6][4]=3;
+        pos[7][5]=4;
+        pos[0][4]=5;
+        pos[2][4]=6;
+        pos[0][2]=7;
+        pos[2][2]=8;
+        pos[4][2]=9;
+        pos[6][2]=10;
+        pos[0][0]=11;
+        pos[2][0]=12;
+        pos[4][0]=13;
+        pos[5][1]=14;
         livePieces.add(0);
         livePieces.add(1);
         livePieces.add(2);
@@ -239,23 +236,17 @@ public class Game {
         livePieces.add(12);
         livePieces.add(13);
         livePieces.add(14);
-        livePieces.add(15);
-*/
-   /*     Piece[] pieces = {new Piece(false,true),new Piece(false,true), new Piece(false,true),new Piece(true,true)};
-        Integer[][] pos = new Integer[8][8];
-        ArrayList<Integer> livePieces = new ArrayList<>();
-        pos[4][4]=0;
-        pos[4][0]=1;
-        pos[2][6]=2;
-        pos[4][2]=3;
-        livePieces.add(0);
-        livePieces.add(1);
-        livePieces.add(2);
-        livePieces.add(3);*/
+
         position = new Position(pieces, pos, livePieces, new ArrayList<>(), false, null);
-        new Window().setVisible(true);
+        new Board().setVisible(true);
+        Editor editor = new Editor();
+        editor.setVisible(true);
         Move.position = new Position(position);
         Move.replacePosition(new Position(position));
+        while (!Edit.start){
+            Thread.sleep(100);
+        }
+        System.out.println("BEGIN");
         run();
 
     }
@@ -477,7 +468,4 @@ class Position {
         return new NumPos(numPos);
     }
 
-    NumPosWithDepth getNumPosWithDepth(boolean isTurnWhite, int depth) {
-        return new NumPosWithDepth(getNumPos(isTurnWhite).numPos,depth);
-    }
 }

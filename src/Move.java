@@ -4,7 +4,6 @@ class Move {
     static Point from;
     static Point to;
     static Position position;
-    static boolean canMove = false;
     static JButton[][] buttons = new JButton[8][8];
     static boolean block = false;
 
