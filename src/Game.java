@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.util.*;
 
 public class Game {
@@ -13,8 +14,9 @@ public class Game {
     static int timeToMove = 0;
     static Double score = 0.0;
     static Thread timer;
-    static Map<NumPos, Double[]> hashPos = new HashMap<>();
+    static Map<Integer,Map<NumPos, Double[]>> hashPos = new HashMap<>();
     static int movesInGame = 0;
+    static boolean firstWinMassage= true;
 
     private static void run() throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
@@ -22,13 +24,7 @@ public class Game {
         while (true) {
             Move.block = false;
             movesInGame+=2;
-            new Thread(() -> {
-                for (NumPos key:hashPos.keySet()) {
-                    if (hashPos.get(key)[2]<(double)movesInGame)
-                        hashPos.remove(key);
-                }
-            });
-            Thread.sleep(500);
+            Thread.sleep(100);
             threadResult.clear();
             ThreadsRunner(new Position(position));
             while (true) {
@@ -36,6 +32,7 @@ public class Game {
                 position.update(true);
                 if (position.validMoves.size()==0){
                     System.out.println("Компьютер победил!");
+                    JOptionPane.showMessageDialog(null, "Компьютер победил!");
                     String n = scanner.next();
                     break label;
                 }
@@ -61,6 +58,14 @@ public class Game {
                     if (position.movePiece==null)
                         break;
             }
+            position.update(false);
+            if (position.validMoves.size()==0){
+                System.out.println("Вы победили!");
+                JOptionPane.showMessageDialog(null, "Вы победили!");
+                Move.block = true;
+                String n = scanner.next();
+                break label;
+            }
             System.out.println("Идет анализ...");
             ThreadsStop(new Position(position));
             for (Point[] moves : threadResult)
@@ -77,6 +82,10 @@ public class Game {
                 } catch (InterruptedException ignored) {}
             });
             timer.start();
+            if (firstWinMassage && score<-290 && score>-300) {
+                JOptionPane.showMessageDialog(null, "Компьютер нашел победу в " + (int)((300 + score) * 100) + " полуходов");
+                firstWinMassage = false;
+            }
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
             System.out.println(hashPos.size());

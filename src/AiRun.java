@@ -5,7 +5,7 @@ class AiRun {
 
     ArrayList<Point[]> legalMoves;
     Map<NumPos, ArrayList<Integer>> hashValidMoves;
-    Map<NumPos, Double[]> hashPos = new HashMap<>();
+    Map<Integer,Map<NumPos, Double[]>> hashPos = new HashMap<>();
     long timeToMove;
     AiRun(long timeToMove){
         this.legalMoves = new ArrayList<>();
@@ -63,7 +63,9 @@ class AiRun {
             if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName())) {
                 System.out.println("Не завершен "+Thread.currentThread().getName());
                 Game.score = min;
-                Game.hashPos.putAll(hashPos);
+                for (int i = 0; i < hashPos.size()+10; i++)
+                    if (Game.hashPos.get(i)!=null && hashPos.get(i)!=null)
+                        Game.hashPos.get(i).putAll(hashPos.get(i));
                 return result;
             }
         while (Game.threadNumber==-1) {
@@ -95,18 +97,20 @@ class AiRun {
                 Position newPosition = Game.MakeMove(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y);
                 Double[] hash = new Double[3];
                 try {
-                    hash = Game.hashPos.get(newPosition.getNumPos(depth % 2 == 1)).clone();
+                    hash = Game.hashPos.get(Game.movesInGame + depth + 1).get(newPosition.getNumPos(depth % 2 == 1)).clone();
                 }
                 catch (NullPointerException e) {
                     try{
-                        hash = hashPos.get(newPosition.getNumPos(depth % 2 == 1)).clone();
+                        hash = hashPos.get(Game.movesInGame + depth + 1).get(newPosition.getNumPos(depth % 2 == 1)).clone();
                     }
                     catch (NullPointerException ignore) {}
                 }
                 if (hash[0]==null || (hash[0]!=null && hash[1]<(maxDepth-depth))) {
                     result = analyze(newPosition, 1, maxDepth, min, lpr, first)[0];
-                    if (!(System.currentTimeMillis() - Game.st >= Game.timeToMove && !first))
-                    hashPos.put(newPosition.getNumPos(depth%2==1),new Double[]{result,(double)(maxDepth-depth),(double)(Game.movesInGame+depth+1)});
+                    if (!(System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)){
+                        hashPos.computeIfAbsent(Game.movesInGame + depth + 1, k -> new HashMap<>());
+                    hashPos.get((Game.movesInGame+depth+1)).put(newPosition.getNumPos(depth%2==1),new Double[]{result,(double)(maxDepth-depth)});
+                    }
                 }
                 else
                     result = hash[0];
@@ -157,18 +161,20 @@ class AiRun {
             Position newPosition = Game.MakeMove(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y);
             Double[] hash = new Double[3];
             try {
-                hash = Game.hashPos.get(newPosition.getNumPos(depth % 2 == 1)).clone();
+                hash = Game.hashPos.get(Game.movesInGame + depth + 1).get(newPosition.getNumPos(depth % 2 == 1)).clone();
             }
             catch (NullPointerException e) {
                 try {
-                    hash = hashPos.get(newPosition.getNumPos(depth % 2 == 1)).clone();
+                    hash = hashPos.get(Game.movesInGame + depth + 1).get(newPosition.getNumPos(depth % 2 == 1)).clone();
                 }
                 catch (NullPointerException ignore) {}
             }
             if (hash[0]==null || (hash[0]!=null && hash[1]<(maxDepth-depth))) {
                 result = analyze(newPosition, depth + 1, maxDepth, (depth % 2 == 0) ? min : max, lpr, first)[0];
-                if (!(System.currentTimeMillis() - Game.st >= Game.timeToMove && !first))
-                hashPos.put(newPosition.getNumPos(depth%2==1),new Double[]{result,(double)(maxDepth-depth),(double)(Game.movesInGame+depth+1)});
+                if (!(System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)) {
+                    hashPos.computeIfAbsent(Game.movesInGame + depth + 1, k -> new HashMap<>());
+                    hashPos.get((Game.movesInGame + depth + 1)).put(newPosition.getNumPos(depth % 2 == 1), new Double[]{result, (double) (maxDepth - depth)});
+                }
             }
             else
                 result = hash[0];
@@ -338,8 +344,47 @@ class AiRun {
         final double costOfCell = -0.002;
         final double passtoQueen = 0.5;
         final double flank = -0.01 * position.livePieces.size() / 24;
+        final double bigWay = 0.07;
+
+        int blackPieces = 0,whitePieces = 0,blackQueens = 0,whiteQueens = 0;
+        boolean BigWayWhite = false,BigWayBlack = false;
+        for (int n:
+             position.livePieces)
+            if (position.pieces[n].isWhite){
+                if (position.pieces[n].isQueen)
+                    whiteQueens++;
+
+                else
+                    whitePieces++;
+            }
+            else {
+                if (position.pieces[n].isQueen)
+                    blackQueens++;
+                else
+                     blackPieces++;
+            }
+            if (whiteQueens+blackQueens>0)
+        for (int i = 0; i < 8; i++)
+            if (position.pos[i][i]!=null && position.pieces[position.pos[i][i]].isQueen)
+                if (position.pieces[position.pos[i][i]].isWhite)
+                    BigWayWhite = true;
+                else
+                    BigWayBlack = true;
+
+
+        //Draw
+        if (whiteQueens==1 && whitePieces==0 && blackQueens>=1 && blackPieces+blackQueens<=3 && BigWayWhite || blackQueens==1 && blackPieces==0 && whiteQueens>=1 && whitePieces+whiteQueens<=3 && BigWayBlack)
+            return 0;
+        if (whiteQueens==1 && whitePieces==1 && blackQueens>=1 && blackPieces+blackQueens<=4 && blackPieces>=1 || blackQueens==1 && blackPieces==1 && whiteQueens>=1 && whitePieces+blackQueens<=4 && whitePieces>=1)
+            return 0;
+
 
         double anl = 0;
+        if (BigWayBlack)
+            anl-=bigWay;
+        if (BigWayWhite)
+            anl+=bigWay;
+
         for (int i = 0; i < position.livePieces.size(); i++)
             if (position.pieces[position.livePieces.get(i)].isWhite) {
                 if (position.pieces[position.livePieces.get(i)].isQueen)
