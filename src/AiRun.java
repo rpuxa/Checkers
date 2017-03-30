@@ -31,7 +31,7 @@ class AiRun {
                     for (int i = 0; (System.currentTimeMillis() - Game.st <= timeToMove); i += 2) {
                         if (Objects.equals(Thread.currentThread().getName(), "0 "))
                             System.out.println(i+4);
-                        Double[] anl = analyze(new Position(position), 0, i + 4, 0, new int[100], i == 0);
+                        Double[] anl = analyze(new Position(position), 0, i + 4, -10000,10000, new int[100], i == 0);
                         if (!(Game.threadNumber==-1 || Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))) {
                             System.out.println("Завершен "+Thread.currentThread().getName());
                             return new ArrayList<>();
@@ -78,7 +78,7 @@ class AiRun {
 
 
 
-    private Double[] analyze(Position position, int depth, int maxDepth, double alpha, int[] lp, boolean first) {
+    private Double[] analyze(Position position, int depth, int maxDepth, double alpha,double beta, int[] lp, boolean first) {
         if (depth != 0 && position.movePiece != null)
             depth--;
 
@@ -105,8 +105,8 @@ class AiRun {
                     }
                     catch (NullPointerException ignore) {}
                 }
-                if (hash[0]==null || (hash[0]!=null && hash[1]<(maxDepth-depth))) {
-                    result = analyze(newPosition, 1, maxDepth, min, lpr, first)[0];
+                if (hash[0]==null || (hash[1]<(maxDepth-depth))) {
+                    result = analyze(newPosition, 1, maxDepth, alpha,beta, lpr, first)[0];
                     if (!(System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)){
                         hashPos.computeIfAbsent(Game.movesInGame + depth + 1, k -> new HashMap<>());
                     hashPos.get((Game.movesInGame+depth+1)).put(newPosition.getNumPos(depth%2==1),new Double[]{result,(double)(maxDepth-depth)});
@@ -169,8 +169,8 @@ class AiRun {
                 }
                 catch (NullPointerException ignore) {}
             }
-            if (hash[0]==null || (hash[0]!=null && hash[1]<(maxDepth-depth))) {
-                result = analyze(newPosition, depth + 1, maxDepth, (depth % 2 == 0) ? min : max, lpr, first)[0];
+            if (hash[0]==null || (hash[1]<(maxDepth-depth))) {
+                result = analyze(newPosition, depth + 1, maxDepth, alpha,beta, lpr, first)[0];
                 if (!(System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)) {
                     hashPos.computeIfAbsent(Game.movesInGame + depth + 1, k -> new HashMap<>());
                     hashPos.get((Game.movesInGame + depth + 1)).put(newPosition.getNumPos(depth % 2 == 1), new Double[]{result, (double) (maxDepth - depth)});
@@ -179,22 +179,30 @@ class AiRun {
             else
                 result = hash[0];
             if (depth % 2 == 0) {
-                if (result < min) {
+                if (result < min)
                     min = result;
+                if (result<beta) {
+                    beta = result;
                     sequence.addFirst(i);
-                } else
+                }
+                else
                     sequence.addLast(i);
-                if (alpha < 200 && alpha >= result)
+                if (result<=alpha)
                     break;
+
                 if (min < -200)
                     break;
             } else {
-                if (result > max) {
+                if (result > max)
                     max = result;
+
+                if (result>alpha) {
+                    alpha = result;
                     sequence.addFirst(i);
-                } else
+                }
+                else
                     sequence.addLast(i);
-                if (alpha > -200 && alpha <= result)
+                if (result>=beta)
                     break;
                 if (max > 200)
                     break;
@@ -345,6 +353,7 @@ class AiRun {
         final double passtoQueen = 0.5;
         final double flank = -0.01 * position.livePieces.size() / 24;
         final double bigWay = 0.07;
+        final double combination = 0.09;
 
         int blackPieces = 0,whitePieces = 0,blackQueens = 0,whiteQueens = 0;
         boolean BigWayWhite = false,BigWayBlack = false;
@@ -373,7 +382,9 @@ class AiRun {
 
 
         //Draw
-        if (whiteQueens==1 && whitePieces==0 && blackQueens>=1 && blackPieces+blackQueens<=3 && BigWayWhite || blackQueens==1 && blackPieces==0 && whiteQueens>=1 && whitePieces+whiteQueens<=3 && BigWayBlack)
+        if (whiteQueens==1 && whitePieces==0 && blackQueens>=1 && blackPieces+blackQueens<=2 || blackQueens==1 && blackPieces==0 && whiteQueens>=1 && whitePieces+whiteQueens<=2)
+            return 0;
+        if (whiteQueens==1 && whitePieces==0 && blackQueens>=1 && blackPieces+blackQueens==3 && BigWayWhite || blackQueens==1 && blackPieces==0 && whiteQueens>=1 && whitePieces+whiteQueens==3 && BigWayBlack)
             return 0;
         if (whiteQueens==1 && whitePieces==1 && blackQueens>=1 && blackPieces+blackQueens<=4 && blackPieces>=1 || blackQueens==1 && blackPieces==1 && whiteQueens>=1 && whitePieces+blackQueens<=4 && whitePieces>=1)
             return 0;
@@ -384,6 +395,15 @@ class AiRun {
             anl-=bigWay;
         if (BigWayWhite)
             anl+=bigWay;
+
+        if (position.pos[2][4]!=null && position.pos[7][5]!=null && position.pieces[position.pos[2][4]].isWhite && !position.pieces[position.pos[2][4]].isQueen && position.pieces[position.pos[7][5]].isWhite && !position.pieces[position.pos[7][5]].isQueen)
+            anl+=combination;
+        if (position.pos[5][3]!=null && position.pos[0][2]!=null && !position.pieces[position.pos[5][3]].isWhite && !position.pieces[position.pos[5][3]].isQueen && !position.pieces[position.pos[0][2]].isWhite && !position.pieces[position.pos[0][2]].isQueen)
+            anl-=combination;
+        if (position.pos[3][3]!=null && position.pos[6][4]!=null && position.pieces[position.pos[3][3]].isWhite && !position.pieces[position.pos[3][3]].isQueen && position.pieces[position.pos[6][4]].isWhite && !position.pieces[position.pos[6][4]].isQueen)
+            anl+=combination;
+        if (position.pos[4][4]!=null && position.pos[1][3]!=null && position.pieces[position.pos[4][4]].isWhite && !position.pieces[position.pos[4][4]].isQueen && position.pieces[position.pos[1][3]].isWhite && !position.pieces[position.pos[1][3]].isQueen)
+            anl+=combination;
 
         for (int i = 0; i < position.livePieces.size(); i++)
             if (position.pieces[position.livePieces.get(i)].isWhite) {
