@@ -435,10 +435,10 @@ class Position {
         for (int[] direction : directions)
             for (int i = 1; AiRun.isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]); i++)
                 if (pos[x + i * direction[0]][y + i * direction[1]] != null) {
-                    if (isTurnWhite == pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite)
-                        break;
                     if (isTurnWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null)
                         return true;
+                    else
+                        break;
                 }
         return false;
     }
@@ -448,10 +448,10 @@ class Position {
             for (int[] direction : directions)
                 for (int i = 1; AiRun.isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]); i++)
                     if (pos[x + i * direction[0]][y + i * direction[1]] != null) {
-                        if (pieces[pos[x][y]].isWhite == pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite)
-                            break;
                         if (pieces[pos[x][y]].isWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null)
                             return true;
+                        else
+                            break;
                     }
         } else {
             for (int[] direction : directions)

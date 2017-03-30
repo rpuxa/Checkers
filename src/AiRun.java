@@ -76,8 +76,6 @@ class AiRun {
             return new ArrayList<>(result);
     }
 
-
-
     private Double[] analyze(Position position, int depth, int maxDepth, double alpha,double beta, int[] lp, boolean first) {
         if (depth != 0 && position.movePiece != null)
             depth--;
@@ -284,7 +282,6 @@ class AiRun {
                                 if (isQueenMultitake)
                                     validMovesQueen.clear();
                                 validMovesQueen.add(new Point[]{new Point(x, y), new Point(x + i * direction[0], y + i * direction[1])});
-
                             } else if (isQueenMultitake && isQueenTake && pos[x + i * direction[0]][y + i * direction[1]] == null && takeQueen(new Position(position),x + i * direction[0], y + i * direction[1], direction, isTurnWhite)) {
                                 validMovesQueen.add(new Point[]{new Point(x, y), new Point(x + i * direction[0], y + i * direction[1])});
                             } else if (pos[x + i * direction[0]][y + i * direction[1]] != null && !isQueenTake && pieces[pos[x][y]].isWhite == !pieces[pos[x + i * direction[0]][y + i * direction[1]]].isWhite && isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]) && pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null) {
@@ -319,8 +316,12 @@ class AiRun {
         int[][] directions = {{-direction2[0], direction2[1]}, {direction2[0], -direction2[1]}};
         for (int[] direction : directions)
             for (int i = 1; isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]); i++)
-                if (position.pos[x + i * direction[0]][y + i * direction[1]] != null)
-                    return isTurnWhite == !position.pieces[position.pos[x + i * direction[0]][y + i * direction[1]]].isWhite && position.pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null;
+                if (position.pos[x + i * direction[0]][y + i * direction[1]] != null) {
+                    if (isTurnWhite == !position.pieces[position.pos[x + i * direction[0]][y + i * direction[1]]].isWhite && position.pos[x + (i + 1) * direction[0]][y + (i + 1) * direction[1]] == null)
+                        return true;
+                    else
+                        break;
+                }
         return false;
     }
 
