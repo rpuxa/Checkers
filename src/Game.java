@@ -1,4 +1,7 @@
+import javax.sound.sampled.*;
 import javax.swing.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 public class Game {
@@ -23,44 +26,46 @@ public class Game {
         label:
         while (true) {
             Move.block = false;
-            movesInGame+=2;
+            movesInGame += 2;
             Thread.sleep(100);
             threadResult.clear();
             ThreadsRunner(new Position(position));
             while (true) {
                 Move.block = false;
                 position.update(true);
-                if (position.validMoves.size()==0){
+                if (position.validMoves.size() == 0) {
                     System.out.println("Компьютер победил!");
+                    Move.timer.interrupt();
                     JOptionPane.showMessageDialog(null, "Компьютер победил!");
                     String n = scanner.next();
                     break label;
                 }
-                int x1,x2,y1,y2;
+                int x1, x2, y1, y2;
                 Move.position = new Position(position);
                 System.out.println("Ждем хода...");
-                    while (Move.to==null || !Move.block){
-                        Thread.sleep(100);
-                    }
+                while (Move.to == null || !Move.block) {
+                    Thread.sleep(100);
+                }
                 System.out.println("Ходим...");
-                    x1 = Move.from.x;
-                    y1 = Move.from.y;
-                    x2 = Move.to.x;
-                    y2 = Move.to.y;
-                    position = MakeMove(position, x1, y1, x2, y2);
-                    if (position.movePiece!=null)
-                        Move.from = new Point(Move.to.x,Move.to.y);
-                    else
-                        Move.from = null;
-                    Move.to = null;
-                    Move.replacePosition(new Position(position));
-                    System.out.println("Обязательный ход: " + ((position.movePiece!=null) ? (position.movePiece.x+" "+position.movePiece.y):"нет"));
-                    if (position.movePiece==null)
-                        break;
+                x1 = Move.from.x;
+                y1 = Move.from.y;
+                x2 = Move.to.x;
+                y2 = Move.to.y;
+                position = MakeMove(position, x1, y1, x2, y2);
+                if (position.movePiece != null)
+                    Move.from = new Point(Move.to.x, Move.to.y);
+                else
+                    Move.from = null;
+                Move.to = null;
+                Move.replacePosition(new Position(position));
+                System.out.println("Обязательный ход: " + ((position.movePiece != null) ? (position.movePiece.x + " " + position.movePiece.y) : "нет"));
+                if (position.movePiece == null)
+                    break;
             }
             position.update(false);
-            if (position.validMoves.size()==0){
+            if (position.validMoves.size() == 0) {
                 System.out.println("Вы победили!");
+                Move.timer.interrupt();
                 JOptionPane.showMessageDialog(null, "Вы победили!");
                 Move.block = true;
                 String n = scanner.next();
@@ -69,27 +74,31 @@ public class Game {
             System.out.println("Идет анализ...");
             ThreadsStop(new Position(position));
             for (Point[] moves : threadResult)
-                Game.position = MakeMove(position,moves[0].x,moves[0].y,moves[1].x,moves[1].y);
-                System.out.println("Ход: " + (char) (threadResult.get(0)[0].x + 'a') + (threadResult.get(0)[0].y + 1) + " " + (char) (threadResult.get(threadResult.size() - 1)[1].x + 'a') + (threadResult.get(threadResult.size() - 1)[1].y + 1));
-            System.out.println("Оценка: " + score);
-            System.out.println((double)((System.currentTimeMillis() - st)) / 1000 + " сек.");
+                Game.position = MakeMove(position, moves[0].x, moves[0].y, moves[1].x, moves[1].y);
+            System.out.println("Ход: " + (char) (threadResult.get(0)[0].x + 'a') + (threadResult.get(0)[0].y + 1) + " " + (char) (threadResult.get(threadResult.size() - 1)[1].x + 'a') + (threadResult.get(threadResult.size() - 1)[1].y + 1));
+            if (score != 10000)
+                System.out.println("Оценка: " + score);
+            System.out.println((double) ((System.currentTimeMillis() - st)) / 1000 + " сек.");
             timer = new Thread(() -> {
                 try {
                     while (true) {
                         Thread.sleep(10);
                         Game.st = System.currentTimeMillis();
                     }
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException ignored) {
+                }
             });
             timer.start();
-            if (firstWinMassage && score<-290 && score>-300) {
-                JOptionPane.showMessageDialog(null, "Компьютер нашел победу в " + (int)((300 + score) * 100) + " полуходов");
+            if (firstWinMassage && score < -290 && score > -300) {
+                JOptionPane.showMessageDialog(null, "Компьютер нашел победу в " + (int) ((300 + score) * 100) + " полуходов");
                 firstWinMassage = false;
             }
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
             System.out.println(hashPos.size());
             Move.replacePosition(new Position(position));
+            Move.sounds("Sounds/blackTurn.wav");
+            Move.block = false;
         }
     }
 
@@ -162,15 +171,15 @@ public class Game {
         timer.start();
         Scanner scanner = new Scanner(System.in);
         System.out.println("Запуск программы...");
-        System.out.println("Время на ход (в секундах):");
+        System.out.println("Время на ход (в миллисекундах):");
         try {
-            timeToMove = Integer.parseInt(args[0]) * 1000;
+            timeToMove = Integer.parseInt(args[0]);
             System.out.println(args[0]);
         }
         catch (ArrayIndexOutOfBoundsException e){
-                timeToMove = scanner.nextInt() * 1000;
+                timeToMove = scanner.nextInt();
         }
-    /*  Piece[] pieces = new Piece[24];
+      Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[BOARD_SIZE][BOARD_SIZE];
         ArrayList<Integer> livePieces = new ArrayList<>();
         for (int i = 0; i <= 23; i++)
@@ -195,7 +204,7 @@ public class Game {
                 else
                     pos[x - 1][y] = i;
                 i++;
-            }*/
+            }
 
      /*  Piece[] pieces = {new Piece(false,false),new Piece(false,false),new Piece(false,false), new Piece(true,false),new Piece(true,false)};
         Integer[][] pos = new Integer[8][8];
@@ -211,7 +220,7 @@ public class Game {
         livePieces.add(3);
         livePieces.add(4);
         */
-
+/*
         Piece[] pieces = {new Piece(false,false),new Piece(false,false),new Piece(false,false), new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false)};
         Integer[][] pos = new Integer[8][8];
         ArrayList<Integer> livePieces = new ArrayList<>();
@@ -245,17 +254,20 @@ public class Game {
         livePieces.add(12);
         livePieces.add(13);
         livePieces.add(14);
-
+*/
         position = new Position(pieces, pos, livePieces, new ArrayList<>(), false, null);
         new Board().setVisible(true);
         Editor editor = new Editor();
         editor.setVisible(true);
         Move.position = new Position(position);
         Move.replacePosition(new Position(position));
+        Clock clock = new Clock();
+        clock.setVisible(true);
         while (!Edit.start){
             Thread.sleep(100);
         }
         System.out.println("BEGIN");
+        clock.start(1800);
         run();
 
     }

@@ -29,7 +29,7 @@ class AiRun {
 
                     label:
                     for (int i = 0; (System.currentTimeMillis() - Game.st <= timeToMove); i += 2) {
-                        if (Objects.equals(Thread.currentThread().getName(), "0 "))
+                     //   if (Objects.equals(Thread.currentThread().getName(), "0 "))
                             System.out.println(i+4);
                         Double[] anl = analyze(new Position(position), 0, i + 4, -10000,10000, new int[100], i == 0);
                         if (!(Game.threadNumber==-1 || Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))) {
@@ -42,7 +42,7 @@ class AiRun {
                                 if (movesscore[j - 1] < -250)
                                     break label;
                             }
-                            if (i>=100)
+                            if (i>=80)
                                 break;
                     }
                     min = 10000.0;
@@ -134,7 +134,7 @@ class AiRun {
 
         position = update(position, depth % 2 == 1);
 
-        if (!position.take) {
+        if (!position.take && position.movePiece==null) {
             if (depth % 2 == 1 && depth >= 3 && lp[depth] < lp[depth - 2])
                 maxDepth -= 2;
             if (depth % 2 == 0 && depth >= 2 && lp[depth] > lp[depth - 2])
@@ -387,7 +387,7 @@ class AiRun {
             return 0;
         if (whiteQueens==1 && whitePieces==0 && blackQueens>=1 && blackPieces+blackQueens==3 && BigWayWhite || blackQueens==1 && blackPieces==0 && whiteQueens>=1 && whitePieces+whiteQueens==3 && BigWayBlack)
             return 0;
-        if (whiteQueens==1 && whitePieces==1 && blackQueens>=1 && blackPieces+blackQueens<=4 && blackPieces>=1 || blackQueens==1 && blackPieces==1 && whiteQueens>=1 && whitePieces+blackQueens<=4 && whitePieces>=1)
+        if (whiteQueens==1 && whitePieces==1 && blackQueens>=1 && blackPieces+blackQueens<=4 && blackPieces>=1  && BigWayWhite || blackQueens==1 && blackPieces==1 && whiteQueens>=1 && whitePieces+blackQueens<=4 && whitePieces>=1  && BigWayBlack)
             return 0;
 
 

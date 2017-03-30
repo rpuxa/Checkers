@@ -1,4 +1,7 @@
+import javax.sound.sampled.*;
 import javax.swing.*;
+import java.io.File;
+import java.io.IOException;
 
 class Move {
     static Point from;
@@ -6,6 +9,7 @@ class Move {
     static Position position;
     static JButton[][] buttons = new JButton[8][8];
     static boolean block = false;
+    static Thread timer;
 
     static void change(int y, int x) {
         if (!block)
@@ -15,6 +19,7 @@ class Move {
             if (Game.MakeLegalMove(new Position(position), from.x, from.y, x, y)) {
                 to = new Point(x, y);
                 block =true;
+                sounds("Sounds/whiteTurn.wav");
             }
             else
                 from = new Point(x, y);
@@ -50,5 +55,18 @@ class Move {
                         ImageIcon icon = new ImageIcon("Icons/Black_cell.png");
                         buttons[i][j].setIcon(icon);
                     }
+    }
+
+    static void sounds(String sound){
+        try {
+            File soundFile = new File(sound);
+            AudioInputStream ais = AudioSystem.getAudioInputStream(soundFile);
+            Clip clip = AudioSystem.getClip();
+            clip.open(ais);
+            clip.setFramePosition(0);
+            clip.start();
+        } catch (IOException | UnsupportedAudioFileException | LineUnavailableException exc) {
+            exc.printStackTrace();
+        }
     }
 }

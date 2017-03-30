@@ -179,6 +179,71 @@ class Editor extends JFrame {
 
 }
 
+class Clock extends JFrame {
+
+    JLabel clock1;
+    JLabel clock2;
+
+    @Override
+    protected void frameInit() {
+        super.frameInit();
+
+        final Dimension screenSize = getToolkit().getScreenSize();
+
+        setResizable(false);
+
+        final int width = screenSize.width / 3, height = screenSize.height / 3;
+        setSize(400, 100);
+
+        final int centerX = screenSize.width / 2, centerY = screenSize.height / 2;
+        setLocation(centerX - width / 2, centerY - height / 2 - 100);
+
+        GridLayout layout = new GridLayout(1, 2);
+        setLayout(layout);
+
+        Font font = new Font("Verdana", Font.PLAIN, 31);
+
+        clock1 = new JLabel("03:00:0");
+        clock2 = new JLabel("03:00:0");
+
+        clock1.setFont(font);
+        clock2.setFont(font);
+
+        add(clock1);
+        add(clock2);
+    }
+
+    void start(int time){
+        Move.timer = new Thread(() -> {
+            try {
+                int timeWhite = time;
+                int timeBlack = time;
+                while (true) {
+                    Thread.sleep(100);
+                    if (Move.block) {
+                        timeBlack -= 1;
+                        clock2.setText("0" + (timeBlack / 600) + ":" + (((timeBlack / 10 - timeBlack / 600 * 60)<10) ? "0":"") + (timeBlack / 10 - timeBlack / 600 * 60) + ":" + (timeBlack - timeBlack / 10 * 10));
+                    }
+                    else {
+                        timeWhite -= 1;
+                        clock1.setText("0" + (timeWhite / 600) + ":" + (((timeWhite / 10 - timeWhite / 600 * 60)<10) ? "0":"") + (timeWhite / 10 - timeWhite / 600 * 60) + ":" + (timeWhite - timeWhite / 10 * 10));
+                    }
+                    if (timeBlack<=0){
+                        JOptionPane.showMessageDialog(null, "Компьютер просрочил время. Вы выиграли!");
+                    } else if (timeWhite<=0) {
+                        JOptionPane.showMessageDialog(null, "Вы просрочили время. Компьютер выигрл!");
+                        new Thread(() -> {
+                            while (true)
+                                Move.block = true;
+                        }).start();
+                    }
+            }
+            } catch (InterruptedException ignored) {}
+        });
+        Move.timer.start();
+    }
+}
+
 class Edit{
     static boolean start = false;
     static JButton[][] buttons = new JButton[8][8];
