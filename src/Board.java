@@ -219,20 +219,32 @@ class Clock extends JFrame {
                 int timeWhite = time;
                 int timeBlack = time;
                 while (true) {
-                    Thread.sleep(100);
+                    Thread.sleep(1000);
                     if (Move.block) {
-                        timeBlack -= 1;
+                        timeBlack -= 10;
                         clock2.setText("0" + (timeBlack / 600) + ":" + (((timeBlack / 10 - timeBlack / 600 * 60)<10) ? "0":"") + (timeBlack / 10 - timeBlack / 600 * 60) + ":" + (timeBlack - timeBlack / 10 * 10));
                     }
                     else {
-                        timeWhite -= 1;
+                        timeWhite -= 10;
                         clock1.setText("0" + (timeWhite / 600) + ":" + (((timeWhite / 10 - timeWhite / 600 * 60)<10) ? "0":"") + (timeWhite / 10 - timeWhite / 600 * 60) + ":" + (timeWhite - timeWhite / 10 * 10));
                     }
+                    if (time/2 < timeBlack)
+                        Game.timeToMove = time/200*1000;
+                    else if (time/2 > timeBlack && time/4 < timeBlack)
+                        Game.timeToMove = time/300*1000;
+                    else if(time/4 > timeBlack && time/8 < timeBlack)
+                        Game.timeToMove = time/400*1000;
+                    else if(time/8 > timeBlack && time/16 < timeBlack)
+                        Game.timeToMove = time/800*1000;
+                    else if(time/16 > timeBlack)
+                        Game.timeToMove = time/1600*1000;
                     if (timeBlack<=0){
                         JOptionPane.showMessageDialog(null, "Компьютер просрочил время. Вы выиграли!");
+                        Move.timer.interrupt();
                     } else if (timeWhite<=0) {
-                        JOptionPane.showMessageDialog(null, "Вы просрочили время. Компьютер выигрл!");
+                        JOptionPane.showMessageDialog(null, "Вы просрочили время. Компьютер выиграл!");
                         new Thread(() -> {
+                            Move.timer.interrupt();
                             while (true)
                                 Move.block = true;
                         }).start();

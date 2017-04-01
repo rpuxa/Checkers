@@ -17,7 +17,7 @@ public class Game {
     static int timeToMove = 0;
     static Double score = 0.0;
     static Thread timer;
-    static Map<Integer,Map<NumPos, Double[]>> hashPos = new HashMap<>();
+    static Map<Integer,Map<NumPos, ArrayList<Point[]>>> hashValidMoves = new HashMap<>();
     static int movesInGame = 0;
     static boolean firstWinMassage= true;
 
@@ -43,15 +43,27 @@ public class Game {
                 int x1, x2, y1, y2;
                 Move.position = new Position(position);
                 System.out.println("Ждем хода...");
+
                 while (Move.to == null || !Move.block) {
                     Thread.sleep(100);
                 }
+
                 System.out.println("Ходим...");
                 x1 = Move.from.x;
                 y1 = Move.from.y;
                 x2 = Move.to.x;
                 y2 = Move.to.y;
+
+              /*  Move.block = true;
+                AiRun aiRun = new AiRun(timeToMove,-9);
+                Position rPosition = new Position(position);
+                rPosition.reverce();
+                st = System.currentTimeMillis();
+                for (Point[] moves : aiRun.bfs(new Position(rPosition)))
+                    Game.position = MakeMove(position, 7-moves[0].x, 7-moves[0].y, 7-moves[1].x, 7-moves[1].y);*/
+               // Thread.sleep(600);
                 position = MakeMove(position, x1, y1, x2, y2);
+                Move.sounds("Sounds/whiteTurn.wav");
                 if (position.movePiece != null)
                     Move.from = new Point(Move.to.x, Move.to.y);
                 else
@@ -80,13 +92,13 @@ public class Game {
                 System.out.println("Оценка: " + score);
             System.out.println((double) ((System.currentTimeMillis() - st)) / 1000 + " сек.");
             timer = new Thread(() -> {
-                try {
-                    while (true) {
-                        Thread.sleep(10);
-                        Game.st = System.currentTimeMillis();
-                    }
-                } catch (InterruptedException ignored) {
-                }
+                //try {
+                  //  while (true) {
+                    //    Thread.sleep(10);
+                 //       Game.st = System.currentTimeMillis();
+                  //  }
+               // } catch (InterruptedException ignored) {
+               // }
             });
             timer.start();
             if (firstWinMassage && score < -290 && score > -300) {
@@ -95,7 +107,7 @@ public class Game {
             }
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
-            System.out.println(hashPos.size());
+            Thread.sleep(600);
             Move.replacePosition(new Position(position));
             Move.sounds("Sounds/blackTurn.wav");
             Move.block = false;
@@ -120,14 +132,18 @@ public class Game {
             if (position1.movePiece!=null)
                 ThreadsRunner(new Position(position1));
             else {
-                AiRun aiRun = new AiRun(timeToMove);
+                AiRun aiRun = new AiRun(timeToMove,threadsCount);
                 threads.add(threadsCount,new Thread(() -> {
-                    ArrayList<Point[]> result = new ArrayList<>(aiRun.bfs(new Position(position1)));
+                    ArrayList<Point[]> result = null;
+                    try {
+                        result = new ArrayList<>(aiRun.bfs(new Position(position1)));
+                    } catch (InterruptedException ignored) {}
                     if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))
                         threadResult = new ArrayList<>(result);
                 }, threadsCount + " "));
                 threadsNum.add(threadsCount, position1.getNumPos(false));
-              //  threads.get(threadsCount).start();
+               // if (threadsCount==0)
+               // threads.get(threadsCount).start();
                 Thread.sleep(100);
                 threadsCount++;
             }
@@ -150,6 +166,8 @@ public class Game {
         threadsCount = 0;
         while (timer.isAlive())
         timer.interrupt();
+     //  if (threadNumber!=0)
+        st = System.currentTimeMillis();
         thread.start();
         System.out.println("WAIT");
         thread.join();
@@ -160,13 +178,13 @@ public class Game {
 
     public static void main(String[] args) throws InterruptedException {
         timer = new Thread(() -> {
-            try {
-                while (true) {
-                    Thread.sleep(10);
-                    Game.st = System.currentTimeMillis();
-                    System.out.print("");
-                }
-            } catch (InterruptedException ignored) {}
+         //  try {
+           //     while (true) {
+          //          Thread.sleep(10);
+         //           Game.st = System.currentTimeMillis();
+          //          System.out.print("");
+          //      }
+         //   } catch (InterruptedException ignored) {}
         });
         timer.start();
         Scanner scanner = new Scanner(System.in);
@@ -267,11 +285,10 @@ public class Game {
             Thread.sleep(100);
         }
         System.out.println("BEGIN");
-        clock.start(1800);
+      //  clock.start(1200);
         run();
 
     }
-
 
     static Position MakeMove(Position position1, int x1, int y1, int x2, int y2) {
         boolean isTurnWhite = position1.pieces[position1.pos[x1][y1]].isWhite;
@@ -372,6 +389,24 @@ class Position {
         else
             this.movePiece = null;
 
+    }
+
+    void reverce(){
+        Integer[][] pos = new Integer[Game.BOARD_SIZE][Game.BOARD_SIZE];
+        for (int i = 0; i < pieces.length; ++i)
+            if (pieces[i] != null)
+                this.pieces[i] = new Piece(!pieces[i].isWhite, pieces[i].isQueen);
+        for (int i = 0; i <= 7; ++i)
+            for (int j = 0; j <= 7; j++)
+            pos[i][j] = this.pos[7-i][7-j];
+        for (int i = 0; i < 8; i++)
+            this.pos[i] = pos[i].clone();
+        this.livePieces = new ArrayList<>(livePieces);
+        this.validMoves = new ArrayList<>();
+        if (movePiece != null)
+            this.movePiece = new Point(7-movePiece.x, 7-movePiece.y);
+        else
+            this.movePiece = null;
     }
 
     void update(boolean isTurnWhite) {

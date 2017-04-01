@@ -19,7 +19,6 @@ class Move {
             if (Game.MakeLegalMove(new Position(position), from.x, from.y, x, y)) {
                 to = new Point(x, y);
                 block =true;
-                sounds("Sounds/whiteTurn.wav");
             }
             else
                 from = new Point(x, y);
