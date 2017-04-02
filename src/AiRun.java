@@ -64,7 +64,7 @@ class AiRun {
                         break;
                     }
 
-                    if (i + 4 >= 8)
+                    if (i + 4 >= 80)
                         break;
 
                     if (System.currentTimeMillis() - Game.st >= Game.timeToMove)
@@ -242,8 +242,14 @@ class AiRun {
           //      Game.hashPos.get(Game.movesInGame + depth + 1).put(position.getNumPos(), new Double[]{(depth % 2 == 0) ? min : max, (double) (maxDepth - depth)});
           // }
         }
-        Point[] move = sequence.getFirst();
-        return new Double[]{(depth % 2 == 0) ? min : max,(double)(move[0].x*1000+move[0].y*100+move[1].x*10+move[1].y)};
+        Point[] move;
+        Double doubleMove = null;
+        try {
+            move = sequence.getFirst();
+            doubleMove = (double)(move[0].x*1000+move[0].y*100+move[1].x*10+move[1].y);
+        } catch (Exception ignored) {}
+
+        return new Double[]{(depth % 2 == 0) ? min : max,doubleMove};
     }
 
     Position update(Position position, boolean isTurnWhite, int depth, Point[] killerMove) {

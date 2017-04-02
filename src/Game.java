@@ -412,6 +412,8 @@ class Position {
 
     }
 
+
+
     void reverce(){
         Integer[][] pos = new Integer[Game.BOARD_SIZE][Game.BOARD_SIZE];
         for (int i = 0; i < pieces.length; ++i)
@@ -541,8 +543,12 @@ class Position {
 
             }
 
-        if (movePiece!=null)
-            numPos += 977 * movePiece.x + 73*movePiece.y;
+        if (movePiece!=null) {
+            numPos *= 8;
+            numPos += movePiece.x;
+            numPos *= 8;
+            numPos += movePiece.y;
+        }
 
         return numPos;
     }
