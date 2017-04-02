@@ -7,15 +7,15 @@ public class Game {
     static long st = System.currentTimeMillis();
     final static int BOARD_SIZE = 8;
     static ArrayList<Thread> threads = new ArrayList<>();
-    static ArrayList<NumPos> threadsNum = new ArrayList<>();
+    static ArrayList<Long> threadsNum = new ArrayList<>();
     static ArrayList<Point[]> threadResult = new ArrayList<>();
     static int threadNumber = -1;
     static int threadsCount = 0;
     static int timeToMove = 0;
     static Double score = 0.0;
     static Thread timer;
-    static Map<Integer, Map<NumPos, ArrayList<Point[]>>> hashValidMoves = new HashMap<>();
-    static Map<Integer, Map<NumPos, Double[]>> hashPos = new HashMap<>();
+    static Map<Integer, Map<Long, Moves>> hashValidMoves = new HashMap<>();
+    static Map<Integer, Map<Long, Double[]>> hashPos = new HashMap<>();
     static int movesInGame = 0;
     static boolean firstWinMassage = true;
     static int offerDrawMoves = 0;
@@ -24,6 +24,22 @@ public class Game {
         Scanner scanner = new Scanner(System.in);
         label:
         while (true) {
+                long size = 0;
+                for (int i = 0; i < movesInGame; i++) {
+                    try {
+                        hashPos.get(movesInGame).clear();
+                    }
+                    catch (Exception ignored) {}
+                    try {
+                        hashValidMoves.get(movesInGame).clear();
+                    }
+                    catch (Exception ignored) {}
+                }
+
+                for (int i = 0; i < hashPos.size(); i++)
+                    if (hashPos.get(i)!=null)
+                        size += hashPos.get(i).size();
+                System.out.println("Размер : " + size);
             Move.block = false;
             movesInGame += 2;
             Thread.sleep(100);
@@ -52,16 +68,17 @@ public class Game {
                 y1 = Move.from.y;
                 x2 = Move.to.x;
                 y2 = Move.to.y;
-
-              /*  Move.block = true;
+                position = MakeMove(position, x1, y1, x2, y2);
+/*
+                Move.block = true;
                 AiRun aiRun = new AiRun(timeToMove,-9);
                 Position rPosition = new Position(position);
                 rPosition.reverce();
                 st = System.currentTimeMillis();
                 for (Point[] moves : aiRun.bfs(new Position(rPosition)))
-                    Game.position = MakeMove(position, 7-moves[0].x, 7-moves[0].y, 7-moves[1].x, 7-moves[1].y);*/
-                // Thread.sleep(600);
-                position = MakeMove(position, x1, y1, x2, y2);
+                    Game.position = MakeMove(position, 7-moves[0].x, 7-moves[0].y, 7-moves[1].x, 7-moves[1].y);
+                 Thread.sleep(600);
+                 */
                 Move.sounds("Sounds/whiteTurn.wav");
                 if (position.movePiece != null)
                     Move.from = new Point(Move.to.x, Move.to.y);
@@ -141,7 +158,7 @@ public class Game {
                     if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))
                         threadResult = new ArrayList<>(result);
                 }, threadsCount + " "));
-                threadsNum.add(threadsCount, position1.getNumPos(false));
+                threadsNum.add(threadsCount, position1.getNumPos());
                 // if (threadsCount==0)
                 // threads.get(threadsCount).start();
                 Thread.sleep(100);
@@ -151,7 +168,7 @@ public class Game {
     }
 
     private static void ThreadsStop(Position position) throws InterruptedException {
-        NumPos numPos = position.getNumPos(false);
+        long numPos = position.getNumPos();
         Thread thread = threads.get(0);
         for (int i = 0; i < threadsCount; i++)
             if (threadsNum.get(i).equals(numPos)) {
@@ -290,7 +307,12 @@ public class Game {
     }
 
     static Position MakeMove(Position position1, int x1, int y1, int x2, int y2) {
-        boolean isTurnWhite = position1.pieces[position1.pos[x1][y1]].isWhite;
+        boolean isTurnWhite = false;
+        try {
+            isTurnWhite = position1.pieces[position1.pos[x1][y1]].isWhite;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         position1.update(isTurnWhite);
         for (int i = 0; i < 8; i++)
             for (int j = 0; j < 8; j++) {
@@ -508,26 +530,21 @@ class Position {
         return false;
     }
 
-    NumPos getNumPos(boolean isTurnWhite) {
-        long[] numPos = {1, 1, 1, 1};
+    long getNumPos() {
+        long numPos = 0;
         for (int i = 0; i < Game.BOARD_SIZE; i++)
-            for (int j = 0; j < Game.BOARD_SIZE; j++) {
-                numPos[i / 2] *= 5L;
-                if ((i + j) % 2 == 0 && pos[i][j] != null) {
-                    if (pieces[pos[i][j]].isWhite)
-                        numPos[i / 2] += (pieces[pos[i][j]].isQueen) ? 1L : 2L;
-                    else
-                        numPos[i / 2] += (pieces[pos[i][j]].isQueen) ? 3L : 4L;
-                }
-            }
-        numPos[3] *= 5L;
-        numPos[3] += (isTurnWhite) ? 2:3;
-        if (movePiece!=null) {
-            numPos[2] *= 100;
-            numPos[2] += 10 * movePiece.x + movePiece.y;
-        }
+            for (int j = 0; j < Game.BOARD_SIZE; j++)
+            if ((i+j) % 2 == 0){
+                numPos *= 3L;
+                if ((i + j) % 2 == 0 && pos[i][j] != null)
+                        numPos += (pieces[pos[i][j]].isWhite) ? 1L : 2L;
 
-        return new NumPos(numPos);
+            }
+
+        if (movePiece!=null)
+            numPos += 977 * movePiece.x + 73*movePiece.y;
+
+        return numPos;
     }
 
 }

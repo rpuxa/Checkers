@@ -5,7 +5,7 @@ import java.util.*;
 class AiRun {
 
     ArrayList<Point[]> legalMoves;
-    Map<Integer, Map<NumPos, ArrayList<Point[]>>> hashValidMoves;
+    Map<Integer, Map<Long, Moves>> hashValidMoves;
     int threadNumber;
     long timeToMove;
 
@@ -22,7 +22,7 @@ class AiRun {
         Point[] resultMovePoint = new Point[2];
         Double[] movesscore = new Double[100];
         while (true) {
-            position = update(position, false, -1000);
+            position = update(position, false, -1000, null);
             legalMoves = new ArrayList<>(position.validMoves);
             if (legalMoves.size() == 1) {
                 int resultMove = 0;
@@ -33,9 +33,9 @@ class AiRun {
                 label:
                 for (int i = 0; (System.currentTimeMillis() - Game.st <= timeToMove); i += 2) {
                     //   if (Objects.equals(Thread.currentThread().getName(), "0 "))
-                    System.out.println(i + 4);
+                    System.out.print(i + 4 + " ");
 
-                    Double[] anl = analyze(new Position(position), 0, i + 4, -1000, 1000, i == 0, false);
+                    Double[] anl = analyze(new Position(position), 0, i + 4, -1000, 1000, i == 0, false,null);
                     if (!(Game.threadNumber == -1 || Objects.equals(Game.threadNumber + " ", threadNumber + " "))) {
                         System.out.println("Завершен " + Thread.currentThread().getName());
                         return new ArrayList<>();
@@ -64,7 +64,7 @@ class AiRun {
                         break;
                     }
 
-                    if (i + 4 >= 80)
+                    if (i + 4 >= 8)
                         break;
 
                     if (System.currentTimeMillis() - Game.st >= Game.timeToMove)
@@ -104,70 +104,60 @@ class AiRun {
         return new ArrayList<>(result);
     }
 
-    private Double[] analyze(Position position, int depth, int maxDepth, double alpha, double beta, boolean first, boolean isNegaScoutOn) throws InterruptedException {
+    private Double[] analyze(Position position, int depth, int maxDepth, double alpha, double beta, boolean first, boolean isNegaScoutOn, Point[] killerMove) throws InterruptedException {
+      /*  if (depth==0)
         try {
-            Double[] hash = Game.hashPos.get(Game.movesInGame + depth + 1).get(position.getNumPos(depth % 2 == 1));
+            Double[] hash = Game.hashPos.get(Game.movesInGame + depth + 1).get(position.getNumPos());
             if (hash[1] >= maxDepth - depth)
                 return new Double[]{hash[0]};
-        } catch (NullPointerException ignore) {
-        }
-
+        } catch (NullPointerException ignore) {}
+*/
         if (depth != 0 && position.movePiece != null)
             depth--;
 
         if (depth == 0) {
-            position = update(position, false, depth);
+            Deque<Point[]> sequence = new ArrayDeque<>();
+            ArrayList<Point[]> validMovesCopy = new ArrayList<>(position.validMoves);
+            position = update(position, false, depth, null);
             final Double[] analyzedMoves = new Double[1000];
-            ArrayList<Thread> threads = new ArrayList<>();
-            int threadsCount = 0;
             final double[] min = {300 - 0.01 * depth};
+            int i = 0;
             for (Point[] move :
                     position.validMoves) {
-                final double[] result = new double[1];
+                System.out.print((int)((double)(100*i+100)/position.validMoves.size()) +"% ");
+                validMovesCopy.remove(0);
+                i++;
+                double result;
                 Position newPosition = Game.MakeMove(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y);
-                final int threadsCount2 = threadsCount;
-                final int maxDepth2 = maxDepth;
-                final double[] alphaBeta = {alpha, beta};
-                threads.add(threadsCount, new Thread(() -> {
-                    try {
-                        result[0] = analyze(newPosition, 1, maxDepth2, alphaBeta[0], alphaBeta[1], first, false)[0];
-                        if (!(System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)) {
-                            if (result[0] < min[0])
-                                min[0] = result[0];
-                            analyzedMoves[threadsCount2 + 1] = result[0];
-                        }
-                    } catch (InterruptedException ignore) {
-                    }
-                }));
-                threads.get(threadsCount).start();
-                threadsCount++;
-            }
-            while (true) {
+                result = analyze(newPosition, 1, maxDepth, alpha, beta, first, false, null)[0];
+
                 if (System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)
                     break;
-                if (!(Game.threadNumber == -1 || Objects.equals(Game.threadNumber + " ", threadNumber + " ")))
-                    return new Double[]{1.0};
-                if (min[0] < -200)
+
+                if (result < min[0]){
+                    min[0] = result;
+                    sequence.addFirst(new Point[]{new Point(move[0].x, move[0].y), new Point(move[1].x, move[1].y)});
+                } else
+                    sequence.addLast(new Point[]{new Point(move[0].x, move[0].y), new Point(move[1].x, move[1].y)});
+                analyzedMoves[i] = result;
+
+                if (min[0]<-200)
                     break;
-                boolean alive = false;
-                for (Thread thread : threads)
-                    if (thread.isAlive())
-                        alive = true;
-                if (!alive)
-                    break;
-                Thread.sleep(100);
             }
-            for (Thread thread : threads)
-                if (thread.isAlive())
-                    thread.interrupt();
+            sequence.addAll(validMovesCopy);
+                hashValidMoves.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
+                try {
+                    hashValidMoves.get((Game.movesInGame + depth + 1)).put(position.getNumPos(),new Moves(new ArrayList<>(sequence),position.take));
+                } catch (NullPointerException ignore) {}
             analyzedMoves[0] = min[0];
             Game.hashPos.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
-            Game.hashPos.get(Game.movesInGame + depth + 1).put(position.getNumPos(depth % 2 == 1), new Double[]{min[0], (double) (maxDepth - depth)});
+            Game.hashPos.get(Game.movesInGame + depth + 1).put(position.getNumPos(), new Double[]{min[0], (double) (maxDepth - depth)});
             legalMoves = new ArrayList<>(position.validMoves);
+            System.out.println();
             return analyzedMoves;
         }
 
-        position = update(position, depth % 2 == 1, depth);
+        position = update(position, depth % 2 == 1, depth, killerMove);
 
         if (depth >= maxDepth)
             return new Double[]{Evaluate(new Position(position))};
@@ -179,6 +169,7 @@ class AiRun {
             maxDepth++;
 
         ArrayList<Point[]> validMovesCopy = new ArrayList<>(position.validMoves);
+        Point[] KillerMove = null;
 
         for (Point[] move :
                 position.validMoves) {
@@ -186,7 +177,7 @@ class AiRun {
             double result;
             Position newPosition = Game.MakeMove(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y);
 
-              /*  if (depth % 2 == 0 && beta>300 || depth % 2 == 1 && alpha<-300)
+             /*  if (depth % 2 == 0 && beta>300 || depth % 2 == 1 && alpha<-300)
                     result = analyze(newPosition, depth + 1, maxDepth, alpha,beta, first,false)[0];
                 else{
                     if (depth % 2 == 0) {
@@ -202,7 +193,11 @@ class AiRun {
                     }
                 }*/
 
-            result = analyze(newPosition, depth + 1, maxDepth, alpha, beta, first, false)[0];
+            Double[] analyzed = analyze(newPosition, depth + 1, maxDepth, alpha, beta, first, false, KillerMove);
+            result = analyzed[0];
+                try {
+                    KillerMove = new Point[]{new Point ((int)(double)analyzed[1]/1000,((int)(double)analyzed[1]/100) % 10), new Point(((int)(double)analyzed[1]/10) % 10,((int)(double)analyzed[1]) % 10)};
+                } catch (Exception ignore) {}
 
             if (depth % 2 == 0) {
                 if (result < min)
@@ -240,16 +235,26 @@ class AiRun {
         if (!isNegaScoutOn) {
             hashValidMoves.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
             try {
-                hashValidMoves.get((Game.movesInGame + depth + 1)).put(position.getNumPos(depth % 2 == 1), new ArrayList<>(sequence));
-            } catch (NullPointerException ignore) {
-            }
-            Game.hashPos.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
-            Game.hashPos.get(Game.movesInGame + depth + 1).put(position.getNumPos(depth % 2 == 1), new Double[]{(depth % 2 == 0) ? min : max, (double) (maxDepth - depth)});
+                hashValidMoves.get((Game.movesInGame + depth + 1)).put(position.getNumPos(),new Moves(new ArrayList<>(sequence),position.take));
+            } catch (NullPointerException ignore) {}
+          //  if (depth<=8) {
+           //     Game.hashPos.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
+          //      Game.hashPos.get(Game.movesInGame + depth + 1).put(position.getNumPos(), new Double[]{(depth % 2 == 0) ? min : max, (double) (maxDepth - depth)});
+          // }
         }
-        return new Double[]{(depth % 2 == 0) ? min : max};
+        Point[] move = sequence.getFirst();
+        return new Double[]{(depth % 2 == 0) ? min : max,(double)(move[0].x*1000+move[0].y*100+move[1].x*10+move[1].y)};
     }
 
-    Position update(Position position, boolean isTurnWhite, int depth) {
+    Position update(Position position, boolean isTurnWhite, int depth, Point[] killerMove) {
+        Moves moves = null;
+        try {
+            moves = Game.hashValidMoves.get((Game.movesInGame + depth + 1)).get(position.getNumPos());
+        } catch (NullPointerException ignored) {}
+        try {
+            moves = hashValidMoves.get((Game.movesInGame + depth + 1)).get(position.getNumPos());
+        } catch (NullPointerException ignored) {}
+
         Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[Game.BOARD_SIZE][Game.BOARD_SIZE];
         ArrayList<Integer> livePieces;
@@ -268,6 +273,9 @@ class AiRun {
             movePiece = new Point(position.movePiece.x, position.movePiece.y);
         else
             movePiece = null;
+
+        if (moves!=null)
+            return new Position(pieces, pos, livePieces, new ArrayList<>(moves.validMoves), moves.take, movePiece);
 
         validMoves.clear();
         take = false;
@@ -333,17 +341,15 @@ class AiRun {
             if (movePiece != null)
                 break;
         }
-
-        try {
-            validMoves = new ArrayList<>(Game.hashValidMoves.get((Game.movesInGame + depth + 1)).get(position.getNumPos(isTurnWhite)));
-        } catch (NullPointerException ignored) {
-        }
-
-        try {
-            validMoves = new ArrayList<>(hashValidMoves.get((Game.movesInGame + depth + 1)).get(position.getNumPos(isTurnWhite)));
-        } catch (NullPointerException ignored) {
-        }
-
+        if (killerMove!=null)
+            for (int i = 0; i < validMoves.size(); i++) {
+                Point[] move = validMoves.get(i);
+                if (move[0].x == killerMove[0].x && move[0].y == killerMove[0].y && move[1].x == killerMove[1].x && move[1].y == killerMove[1].y) {
+                    validMoves.remove(i);
+                    validMoves.add(0, new Point[]{new Point(killerMove[0].x, killerMove[0].y), new Point(killerMove[1].x, killerMove[1].y)});
+                    break;
+                }
+            }
         return new Position(pieces, pos, livePieces, validMoves, take, movePiece);
     }
 
@@ -539,6 +545,14 @@ class AiRun {
         return count;
     }
 
+}
+class Moves{
+    ArrayList<Point[]> validMoves;
+    boolean take;
+    Moves(ArrayList<Point[]> validMoves, boolean take){
+        this.validMoves = validMoves;
+        this.take = take;
+    }
 }
 
 class NumPos{
