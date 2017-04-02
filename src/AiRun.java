@@ -147,11 +147,11 @@ class AiRun {
             sequence.addAll(validMovesCopy);
                 hashValidMoves.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
                 try {
-                    hashValidMoves.get((Game.movesInGame + depth + 1)).put(position.getNumPos(),new Moves(new ArrayList<>(sequence),position.take));
+                    hashValidMoves.get((Game.movesInGame + depth + 1)).put(position.getNumPos(depth % 2 == 0),new Moves(new ArrayList<>(sequence),position.take));
                 } catch (NullPointerException ignore) {}
             analyzedMoves[0] = min[0];
             Game.hashPos.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
-            Game.hashPos.get(Game.movesInGame + depth + 1).put(position.getNumPos(), new Double[]{min[0], (double) (maxDepth - depth)});
+            Game.hashPos.get(Game.movesInGame + depth + 1).put(position.getNumPos(depth % 2 == 0), new Double[]{min[0], (double) (maxDepth - depth)});
             legalMoves = new ArrayList<>(position.validMoves);
             System.out.println();
             return analyzedMoves;
@@ -235,7 +235,7 @@ class AiRun {
         if (!isNegaScoutOn) {
             hashValidMoves.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
             try {
-                hashValidMoves.get((Game.movesInGame + depth + 1)).put(position.getNumPos(),new Moves(new ArrayList<>(sequence),position.take));
+                hashValidMoves.get((Game.movesInGame + depth + 1)).put(position.getNumPos(depth % 2 == 0),new Moves(new ArrayList<>(sequence),position.take));
             } catch (NullPointerException ignore) {}
           //  if (depth<=8) {
            //     Game.hashPos.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
@@ -255,10 +255,10 @@ class AiRun {
     Position update(Position position, boolean isTurnWhite, int depth, Point[] killerMove) {
         Moves moves = null;
         try {
-            moves = Game.hashValidMoves.get((Game.movesInGame + depth + 1)).get(position.getNumPos());
+            moves = Game.hashValidMoves.get((Game.movesInGame + depth + 1)).get(position.getNumPos(isTurnWhite));
         } catch (NullPointerException ignored) {}
         try {
-            moves = hashValidMoves.get((Game.movesInGame + depth + 1)).get(position.getNumPos());
+            moves = hashValidMoves.get((Game.movesInGame + depth + 1)).get(position.getNumPos(isTurnWhite));
         } catch (NullPointerException ignored) {}
 
         Piece[] pieces = new Piece[24];

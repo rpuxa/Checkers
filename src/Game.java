@@ -158,7 +158,7 @@ public class Game {
                     if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))
                         threadResult = new ArrayList<>(result);
                 }, threadsCount + " "));
-                threadsNum.add(threadsCount, position1.getNumPos());
+                threadsNum.add(threadsCount, position1.getNumPos(false));
                 // if (threadsCount==0)
                 // threads.get(threadsCount).start();
                 Thread.sleep(100);
@@ -168,7 +168,7 @@ public class Game {
     }
 
     private static void ThreadsStop(Position position) throws InterruptedException {
-        long numPos = position.getNumPos();
+        long numPos = position.getNumPos(false);
         Thread thread = threads.get(0);
         for (int i = 0; i < threadsCount; i++)
             if (threadsNum.get(i).equals(numPos)) {
@@ -532,7 +532,7 @@ class Position {
         return false;
     }
 
-    long getNumPos() {
+    long getNumPos(boolean isTurnWhite) {
         long numPos = 0;
         for (int i = 0; i < Game.BOARD_SIZE; i++)
             for (int j = 0; j < Game.BOARD_SIZE; j++)
@@ -549,6 +549,9 @@ class Position {
             numPos *= 8;
             numPos += movePiece.y;
         }
+
+        numPos *= 2;
+        numPos += (isTurnWhite) ? 0 : 1;
 
         return numPos;
     }
