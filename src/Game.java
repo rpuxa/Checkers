@@ -1,7 +1,4 @@
-import javax.sound.sampled.*;
 import javax.swing.*;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 public class Game {
@@ -17,9 +14,11 @@ public class Game {
     static int timeToMove = 0;
     static Double score = 0.0;
     static Thread timer;
-    static Map<Integer,Map<NumPos, ArrayList<Point[]>>> hashValidMoves = new HashMap<>();
+    static Map<Integer, Map<NumPos, ArrayList<Point[]>>> hashValidMoves = new HashMap<>();
+    static Map<Integer, Map<NumPos, Double[]>> hashPos = new HashMap<>();
     static int movesInGame = 0;
-    static boolean firstWinMassage= true;
+    static boolean firstWinMassage = true;
+    static int offerDrawMoves = 0;
 
     private static void run() throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
@@ -61,7 +60,7 @@ public class Game {
                 st = System.currentTimeMillis();
                 for (Point[] moves : aiRun.bfs(new Position(rPosition)))
                     Game.position = MakeMove(position, 7-moves[0].x, 7-moves[0].y, 7-moves[1].x, 7-moves[1].y);*/
-               // Thread.sleep(600);
+                // Thread.sleep(600);
                 position = MakeMove(position, x1, y1, x2, y2);
                 Move.sounds("Sounds/whiteTurn.wav");
                 if (position.movePiece != null)
@@ -93,12 +92,12 @@ public class Game {
             System.out.println((double) ((System.currentTimeMillis() - st)) / 1000 + " сек.");
             timer = new Thread(() -> {
                 //try {
-                  //  while (true) {
-                    //    Thread.sleep(10);
-                 //       Game.st = System.currentTimeMillis();
-                  //  }
-               // } catch (InterruptedException ignored) {
-               // }
+                //  while (true) {
+                //    Thread.sleep(10);
+                //       Game.st = System.currentTimeMillis();
+                //  }
+                // } catch (InterruptedException ignored) {
+                // }
             });
             timer.start();
             if (firstWinMassage && score < -290 && score > -300) {
@@ -114,11 +113,11 @@ public class Game {
         }
     }
 
-    static boolean MakeLegalMove(Position position, int x1,int y1,int x2, int y2) {
+    static boolean MakeLegalMove(Position position, int x1, int y1, int x2, int y2) {
         position.update(true);
         for (int i = 0; i < position.validMoves.size(); i++) {
             Point[] points = position.validMoves.get(i).clone();
-            if (points[0].x==x1 && points[0].y==y1 && points[1].x==x2 && points[1].y==y2)
+            if (points[0].x == x1 && points[0].y == y1 && points[1].x == x2 && points[1].y == y2)
                 return true;
         }
         return false;
@@ -128,22 +127,23 @@ public class Game {
         position.update(true);
         for (int i = 0; i < position.validMoves.size(); i++) {
             Point[] move = position.validMoves.get(i).clone();
-            Position position1 = new Position(MakeMove(new Position(position),move[0].x,move[0].y,move[1].x,move[1].y));
-            if (position1.movePiece!=null)
+            Position position1 = new Position(MakeMove(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y));
+            if (position1.movePiece != null)
                 ThreadsRunner(new Position(position1));
             else {
-                AiRun aiRun = new AiRun(timeToMove,threadsCount);
-                threads.add(threadsCount,new Thread(() -> {
+                AiRun aiRun = new AiRun(timeToMove, threadsCount);
+                threads.add(threadsCount, new Thread(() -> {
                     ArrayList<Point[]> result = null;
                     try {
                         result = new ArrayList<>(aiRun.bfs(new Position(position1)));
-                    } catch (InterruptedException ignored) {}
+                    } catch (InterruptedException ignored) {
+                    }
                     if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))
                         threadResult = new ArrayList<>(result);
                 }, threadsCount + " "));
                 threadsNum.add(threadsCount, position1.getNumPos(false));
-               // if (threadsCount==0)
-               // threads.get(threadsCount).start();
+                // if (threadsCount==0)
+                // threads.get(threadsCount).start();
                 Thread.sleep(100);
                 threadsCount++;
             }
@@ -157,7 +157,7 @@ public class Game {
             if (threadsNum.get(i).equals(numPos)) {
                 thread = threads.get(i);
                 String name = thread.getName();
-                name = name.replaceAll(" ","");
+                name = name.replaceAll(" ", "");
                 threadNumber = Integer.parseInt(name);
                 break;
             }
@@ -165,8 +165,8 @@ public class Game {
         threadsNum.clear();
         threadsCount = 0;
         while (timer.isAlive())
-        timer.interrupt();
-     //  if (threadNumber!=0)
+            timer.interrupt();
+        //  if (threadNumber!=0)
         st = System.currentTimeMillis();
         thread.start();
         System.out.println("WAIT");
@@ -178,13 +178,13 @@ public class Game {
 
     public static void main(String[] args) throws InterruptedException {
         timer = new Thread(() -> {
-         //  try {
-           //     while (true) {
-          //          Thread.sleep(10);
-         //           Game.st = System.currentTimeMillis();
-          //          System.out.print("");
-          //      }
-         //   } catch (InterruptedException ignored) {}
+            //  try {
+            //     while (true) {
+            //          Thread.sleep(10);
+            //           Game.st = System.currentTimeMillis();
+            //          System.out.print("");
+            //      }
+            //   } catch (InterruptedException ignored) {}
         });
         timer.start();
         Scanner scanner = new Scanner(System.in);
@@ -193,11 +193,10 @@ public class Game {
         try {
             timeToMove = Integer.parseInt(args[0]);
             System.out.println(args[0]);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            timeToMove = scanner.nextInt();
         }
-        catch (ArrayIndexOutOfBoundsException e){
-                timeToMove = scanner.nextInt();
-        }
-      Piece[] pieces = new Piece[24];
+        Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[BOARD_SIZE][BOARD_SIZE];
         ArrayList<Integer> livePieces = new ArrayList<>();
         for (int i = 0; i <= 23; i++)
@@ -281,11 +280,11 @@ public class Game {
         Move.replacePosition(new Position(position));
         Clock clock = new Clock();
         clock.setVisible(true);
-        while (!Edit.start){
+        while (!Edit.start) {
             Thread.sleep(100);
         }
         System.out.println("BEGIN");
-      //  clock.start(1200);
+        //  clock.start(1200);
         run();
 
     }

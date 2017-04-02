@@ -1,13 +1,15 @@
+import javax.swing.*;
 import java.util.*;
 
 
 class AiRun {
 
     ArrayList<Point[]> legalMoves;
-    Map<Integer,Map<NumPos, ArrayList<Point[]>>> hashValidMoves;
+    Map<Integer, Map<NumPos, ArrayList<Point[]>>> hashValidMoves;
     int threadNumber;
     long timeToMove;
-    AiRun(long timeToMove, int threadNumber){
+
+    AiRun(long timeToMove, int threadNumber) {
         this.legalMoves = new ArrayList<>();
         this.hashValidMoves = new HashMap<>();
         this.timeToMove = timeToMove;
@@ -15,80 +17,106 @@ class AiRun {
     }
 
     ArrayList<Point[]> bfs(Position position) throws InterruptedException {
-        Double min =10000.0;
+        Double min = 10000.0, minim = 1000.0;
         ArrayList<Point[]> result = new ArrayList<>();
-            Point[] resultMovePoint = new Point[2];
-            Double[] movesscore = new Double[100];
-            while (true) {
-                position = update(position, false,-1000);
-                legalMoves = new ArrayList<>(position.validMoves);
-                if (legalMoves.size() == 1) {
-                    int resultMove = 0;
-                    resultMovePoint[0] = new Point(legalMoves.get(resultMove)[0].x, legalMoves.get(resultMove)[0].y);
-                    resultMovePoint[1] = new Point(legalMoves.get(resultMove)[1].x, legalMoves.get(resultMove)[1].y);
-                } else {
+        Point[] resultMovePoint = new Point[2];
+        Double[] movesscore = new Double[100];
+        while (true) {
+            position = update(position, false, -1000);
+            legalMoves = new ArrayList<>(position.validMoves);
+            if (legalMoves.size() == 1) {
+                int resultMove = 0;
+                resultMovePoint[0] = new Point(legalMoves.get(resultMove)[0].x, legalMoves.get(resultMove)[0].y);
+                resultMovePoint[1] = new Point(legalMoves.get(resultMove)[1].x, legalMoves.get(resultMove)[1].y);
+            } else {
+                int countZero = 0;
+                label:
+                for (int i = 0; (System.currentTimeMillis() - Game.st <= timeToMove); i += 2) {
+                    //   if (Objects.equals(Thread.currentThread().getName(), "0 "))
+                    System.out.println(i + 4);
 
-                    label:
-                    for (int i = 0; (System.currentTimeMillis() - Game.st <= timeToMove); i += 2) {
-                     //   if (Objects.equals(Thread.currentThread().getName(), "0 "))
-                            System.out.println(i+4);
-
-                        Double[] anl = analyze(new Position(position), 0, i + 4, -1000,1000, i == 0,false);
-                        if (!(Game.threadNumber==-1 || Objects.equals(Game.threadNumber + " ", threadNumber + " "))) {
-                            System.out.println("Завершен "+Thread.currentThread().getName());
-                            return new ArrayList<>();
-                        }
-                        for (int j = 1; j < anl.length; j++)
-                            if (anl[j] != null) {
-                                movesscore[j - 1] = anl[j];
-                                if (movesscore[j - 1] < -250)
-                                    break label;
-                            }
-                            if (i+4>=80)
-                                break;
-                        if (System.currentTimeMillis() - Game.st >= Game.timeToMove)
-                            break;
+                    Double[] anl = analyze(new Position(position), 0, i + 4, -1000, 1000, i == 0, false);
+                    if (!(Game.threadNumber == -1 || Objects.equals(Game.threadNumber + " ", threadNumber + " "))) {
+                        System.out.println("Завершен " + Thread.currentThread().getName());
+                        return new ArrayList<>();
                     }
-                    min = 10000.0;
-                    int resultMove = 0;
-                    for (int i = 0; i < movesscore.length; i++)
-                        if (movesscore[i]!=null && movesscore[i] < min) {
-                            min = movesscore[i];
-                            resultMove = i;
+                    for (int j = 1; j < anl.length; j++)
+                        if (anl[j] != null) {
+                            movesscore[j - 1] = anl[j];
+                            if (movesscore[j - 1] < -250)
+                                break label;
                         }
-                    resultMovePoint[0] = new Point(legalMoves.get(resultMove)[0].x, legalMoves.get(resultMove)[0].y);
-                    resultMovePoint[1] = new Point(legalMoves.get(resultMove)[1].x, legalMoves.get(resultMove)[1].y);
-                }
-                result.add(new Point[]{new Point(resultMovePoint[0].x, resultMovePoint[0].y), new Point(resultMovePoint[1].x, resultMovePoint[1].y)});
-                position = Game.MakeMove(new Position(position),resultMovePoint[0].x,resultMovePoint[0].y,resultMovePoint[1].x,resultMovePoint[1].y);
-                    if (position.movePiece == null)
+                    for (int j = 0; j < movesscore.length; j++)
+                        if (movesscore[i] != null && movesscore[i] < minim)
+                            minim = movesscore[i];
+
+                    if (minim == 0.0)
+                        countZero++;
+                    else {
+                        countZero = 0;
+                    }
+                    if (countZero >= 3) {
+                        if (Game.offerDrawMoves <= 0) {
+                            JOptionPane.showMessageDialog(null, "Компьютер предлагает ничью");
+                            Game.offerDrawMoves = 6;
+                        }
+                        Game.offerDrawMoves--;
                         break;
-            }
-            Thread.sleep(100);
-            if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName())) {
-                System.out.println("Не завершен "+Thread.currentThread().getName());
-                Game.score = min;
-                for (int i = 0; i < hashValidMoves.size()+1; i++) {
-                    Game.hashValidMoves.computeIfAbsent(i, k -> new HashMap<>());
-                    if (Game.hashValidMoves.get(i) != null && hashValidMoves.get(i) != null)
-                        Game.hashValidMoves.get(i).putAll(hashValidMoves.get(i));
+                    }
+
+                    if (i + 4 >= 80)
+                        break;
+
+                    if (System.currentTimeMillis() - Game.st >= Game.timeToMove)
+                        break;
                 }
-                return result;
+                min = 10000.0;
+                int resultMove = 0;
+                for (int i = 0; i < movesscore.length; i++)
+                    if (movesscore[i] != null && movesscore[i] < min) {
+                        min = movesscore[i];
+                        resultMove = i;
+                    }
+                resultMovePoint[0] = new Point(legalMoves.get(resultMove)[0].x, legalMoves.get(resultMove)[0].y);
+                resultMovePoint[1] = new Point(legalMoves.get(resultMove)[1].x, legalMoves.get(resultMove)[1].y);
             }
-        while (Game.threadNumber==-1 && threadNumber!=-9) {
+            result.add(new Point[]{new Point(resultMovePoint[0].x, resultMovePoint[0].y), new Point(resultMovePoint[1].x, resultMovePoint[1].y)});
+            position = Game.MakeMove(new Position(position), resultMovePoint[0].x, resultMovePoint[0].y, resultMovePoint[1].x, resultMovePoint[1].y);
+            if (position.movePiece == null)
+                break;
+        }
+        Thread.sleep(100);
+        if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName())) {
+            System.out.println("Не завершен " + Thread.currentThread().getName());
+            Game.score = min;
+            for (int i = 0; i < hashValidMoves.size() + 1; i++) {
+                Game.hashValidMoves.computeIfAbsent(i, k -> new HashMap<>());
+                if (Game.hashValidMoves.get(i) != null && hashValidMoves.get(i) != null)
+                    Game.hashValidMoves.get(i).putAll(hashValidMoves.get(i));
+            }
+            return result;
+        }
+        while (Game.threadNumber == -1 && threadNumber != -9) {
             System.out.print("");
         }
         if (Objects.equals(Game.threadNumber + " ", Thread.currentThread().getName()))
             Game.score = min;
-            return new ArrayList<>(result);
+        return new ArrayList<>(result);
     }
 
-    private Double[] analyze(Position position, int depth, int maxDepth, double alpha,double beta, boolean first, boolean isNegaScoutOn) throws InterruptedException {
+    private Double[] analyze(Position position, int depth, int maxDepth, double alpha, double beta, boolean first, boolean isNegaScoutOn) throws InterruptedException {
+        try {
+            Double[] hash = Game.hashPos.get(Game.movesInGame + depth + 1).get(position.getNumPos(depth % 2 == 1));
+            if (hash[1] >= maxDepth - depth)
+                return new Double[]{hash[0]};
+        } catch (NullPointerException ignore) {
+        }
+
         if (depth != 0 && position.movePiece != null)
             depth--;
 
         if (depth == 0) {
-            position = update(position,false,depth);
+            position = update(position, false, depth);
             final Double[] analyzedMoves = new Double[1000];
             ArrayList<Thread> threads = new ArrayList<>();
             int threadsCount = 0;
@@ -97,34 +125,34 @@ class AiRun {
                     position.validMoves) {
                 final double[] result = new double[1];
                 Position newPosition = Game.MakeMove(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y);
-                    final int threadsCount2 = threadsCount;
-                    final int maxDepth2 = maxDepth;
-                    final double[] alphaBeta = {alpha,beta};
-                    threads.add(threadsCount,new Thread(() -> {
-                        try {
-                            result[0] = analyze(newPosition, 1, maxDepth2, alphaBeta[0], alphaBeta[1], first,false)[0];
-                            if (!(System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)) {
-                                if (result[0] < min[0])
-                                    min[0] = result[0];
-                                analyzedMoves[threadsCount2 + 1] = result[0];
-                            }
+                final int threadsCount2 = threadsCount;
+                final int maxDepth2 = maxDepth;
+                final double[] alphaBeta = {alpha, beta};
+                threads.add(threadsCount, new Thread(() -> {
+                    try {
+                        result[0] = analyze(newPosition, 1, maxDepth2, alphaBeta[0], alphaBeta[1], first, false)[0];
+                        if (!(System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)) {
+                            if (result[0] < min[0])
+                                min[0] = result[0];
+                            analyzedMoves[threadsCount2 + 1] = result[0];
                         }
-                     catch (InterruptedException ignore) {}
+                    } catch (InterruptedException ignore) {
+                    }
                 }));
-                    threads.get(threadsCount).start();
-                    threadsCount++;
+                threads.get(threadsCount).start();
+                threadsCount++;
             }
-            while (true){
+            while (true) {
                 if (System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)
                     break;
-                if (!(Game.threadNumber==-1 || Objects.equals(Game.threadNumber + " ", threadNumber + " ")))
+                if (!(Game.threadNumber == -1 || Objects.equals(Game.threadNumber + " ", threadNumber + " ")))
                     return new Double[]{1.0};
                 if (min[0] < -200)
                     break;
                 boolean alive = false;
                 for (Thread thread : threads)
                     if (thread.isAlive())
-                    alive = true;
+                        alive = true;
                 if (!alive)
                     break;
                 Thread.sleep(100);
@@ -133,11 +161,13 @@ class AiRun {
                 if (thread.isAlive())
                     thread.interrupt();
             analyzedMoves[0] = min[0];
+            Game.hashPos.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
+            Game.hashPos.get(Game.movesInGame + depth + 1).put(position.getNumPos(depth % 2 == 1), new Double[]{min[0], (double) (maxDepth - depth)});
             legalMoves = new ArrayList<>(position.validMoves);
             return analyzedMoves;
         }
 
-        position = update(position, depth % 2 == 1,depth);
+        position = update(position, depth % 2 == 1, depth);
 
         if (depth >= maxDepth)
             return new Double[]{Evaluate(new Position(position))};
@@ -172,18 +202,17 @@ class AiRun {
                     }
                 }*/
 
-                result = analyze(newPosition, depth + 1, maxDepth, alpha,beta, first,false)[0];
+            result = analyze(newPosition, depth + 1, maxDepth, alpha, beta, first, false)[0];
 
             if (depth % 2 == 0) {
                 if (result < min)
                     min = result;
-                if (result<beta) {
+                if (result < beta) {
                     beta = result;
-                    sequence.addFirst(new Point[]{new Point(move[0].x,move[0].y),new Point(move[1].x,move[1].y)});
-                }
-                else
-                    sequence.addLast(new Point[]{new Point(move[0].x,move[0].y),new Point(move[1].x,move[1].y)});
-                if (result<=alpha)
+                    sequence.addFirst(new Point[]{new Point(move[0].x, move[0].y), new Point(move[1].x, move[1].y)});
+                } else
+                    sequence.addLast(new Point[]{new Point(move[0].x, move[0].y), new Point(move[1].x, move[1].y)});
+                if (result <= alpha)
                     break;
 
                 if (min < -200)
@@ -192,20 +221,19 @@ class AiRun {
                 if (result > max)
                     max = result;
 
-                if (result>alpha) {
+                if (result > alpha) {
                     alpha = result;
-                    sequence.addFirst(new Point[]{new Point(move[0].x,move[0].y),new Point(move[1].x,move[1].y)});
-                }
-                else
-                    sequence.addLast(new Point[]{new Point(move[0].x,move[0].y),new Point(move[1].x,move[1].y)});
-                if (result>=beta)
+                    sequence.addFirst(new Point[]{new Point(move[0].x, move[0].y), new Point(move[1].x, move[1].y)});
+                } else
+                    sequence.addLast(new Point[]{new Point(move[0].x, move[0].y), new Point(move[1].x, move[1].y)});
+                if (result >= beta)
                     break;
                 if (max > 200)
                     break;
             }
             if (System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)
                 break;
-            if (!(Game.threadNumber==-1 || Objects.equals(Game.threadNumber + " ",threadNumber + " ")))
+            if (!(Game.threadNumber == -1 || Objects.equals(Game.threadNumber + " ", threadNumber + " ")))
                 return new Double[]{1.0};
         }
         sequence.addAll(validMovesCopy);
@@ -213,12 +241,15 @@ class AiRun {
             hashValidMoves.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
             try {
                 hashValidMoves.get((Game.movesInGame + depth + 1)).put(position.getNumPos(depth % 2 == 1), new ArrayList<>(sequence));
-            } catch (NullPointerException ignore) {}
+            } catch (NullPointerException ignore) {
+            }
+            Game.hashPos.computeIfAbsent((Game.movesInGame + depth + 1), k -> new HashMap<>());
+            Game.hashPos.get(Game.movesInGame + depth + 1).put(position.getNumPos(depth % 2 == 1), new Double[]{(depth % 2 == 0) ? min : max, (double) (maxDepth - depth)});
         }
         return new Double[]{(depth % 2 == 0) ? min : max};
     }
 
-    Position update(Position position, boolean isTurnWhite,int depth) {
+    Position update(Position position, boolean isTurnWhite, int depth) {
         Piece[] pieces = new Piece[24];
         Integer[][] pos = new Integer[Game.BOARD_SIZE][Game.BOARD_SIZE];
         ArrayList<Integer> livePieces;
@@ -313,7 +344,7 @@ class AiRun {
         } catch (NullPointerException ignored) {
         }
 
-        return new Position(pieces,pos,livePieces,validMoves,take,movePiece);
+        return new Position(pieces, pos, livePieces, validMoves, take, movePiece);
     }
 
     static boolean isInBoard(int x, int y) {
@@ -364,55 +395,54 @@ class AiRun {
         final double bigWay = 0.07;
         final double combination = 0.09;
 
-        int blackPieces = 0,whitePieces = 0,blackQueens = 0,whiteQueens = 0;
-        boolean BigWayWhite = false,BigWayBlack = false;
-        for (int n:
-             position.livePieces)
-            if (position.pieces[n].isWhite){
+        int blackPieces = 0, whitePieces = 0, blackQueens = 0, whiteQueens = 0;
+        boolean BigWayWhite = false, BigWayBlack = false;
+        for (int n :
+                position.livePieces)
+            if (position.pieces[n].isWhite) {
                 if (position.pieces[n].isQueen)
                     whiteQueens++;
 
                 else
                     whitePieces++;
-            }
-            else {
+            } else {
                 if (position.pieces[n].isQueen)
                     blackQueens++;
                 else
-                     blackPieces++;
+                    blackPieces++;
             }
-            if (whiteQueens+blackQueens>0)
-        for (int i = 0; i < 8; i++)
-            if (position.pos[i][i]!=null && position.pieces[position.pos[i][i]].isQueen)
-                if (position.pieces[position.pos[i][i]].isWhite)
-                    BigWayWhite = true;
-                else
-                    BigWayBlack = true;
+        if (whiteQueens + blackQueens > 0)
+            for (int i = 0; i < 8; i++)
+                if (position.pos[i][i] != null && position.pieces[position.pos[i][i]].isQueen)
+                    if (position.pieces[position.pos[i][i]].isWhite)
+                        BigWayWhite = true;
+                    else
+                        BigWayBlack = true;
 
 
         //Draw
-        if (whiteQueens==1 && whitePieces==0 && blackQueens>=1 && blackPieces+blackQueens<=2 || blackQueens==1 && blackPieces==0 && whiteQueens>=1 && whitePieces+whiteQueens<=2)
+        if (whiteQueens == 1 && whitePieces == 0 && blackQueens >= 1 && blackPieces + blackQueens <= 2 || blackQueens == 1 && blackPieces == 0 && whiteQueens >= 1 && whitePieces + whiteQueens <= 2)
             return 0;
-        if (whiteQueens==1 && whitePieces==0 && blackQueens>=1 && blackPieces+blackQueens==3 && BigWayWhite || blackQueens==1 && blackPieces==0 && whiteQueens>=1 && whitePieces+whiteQueens==3 && BigWayBlack)
+        if (whiteQueens == 1 && whitePieces == 0 && blackQueens >= 1 && blackPieces + blackQueens == 3 && BigWayWhite || blackQueens == 1 && blackPieces == 0 && whiteQueens >= 1 && whitePieces + whiteQueens == 3 && BigWayBlack)
             return 0;
-        if (whiteQueens==1 && whitePieces==1 && blackQueens>=1 && blackPieces+blackQueens<=4 && blackPieces>=1  && BigWayWhite || blackQueens==1 && blackPieces==1 && whiteQueens>=1 && whitePieces+blackQueens<=4 && whitePieces>=1  && BigWayBlack)
+        if (whiteQueens == 1 && whitePieces == 1 && blackQueens >= 1 && blackPieces + blackQueens <= 4 && blackPieces >= 1 && BigWayWhite || blackQueens == 1 && blackPieces == 1 && whiteQueens >= 1 && whitePieces + blackQueens <= 4 && whitePieces >= 1 && BigWayBlack)
             return 0;
 
 
         double anl = 0;
         if (BigWayBlack)
-            anl-=bigWay;
+            anl -= bigWay;
         if (BigWayWhite)
-            anl+=bigWay;
+            anl += bigWay;
 
-        if (position.pos[2][4]!=null && position.pos[7][5]!=null && position.pieces[position.pos[2][4]].isWhite && !position.pieces[position.pos[2][4]].isQueen && position.pieces[position.pos[7][5]].isWhite && !position.pieces[position.pos[7][5]].isQueen)
-            anl+=combination;
-        if (position.pos[5][3]!=null && position.pos[0][2]!=null && !position.pieces[position.pos[5][3]].isWhite && !position.pieces[position.pos[5][3]].isQueen && !position.pieces[position.pos[0][2]].isWhite && !position.pieces[position.pos[0][2]].isQueen)
-            anl-=combination;
-        if (position.pos[3][3]!=null && position.pos[6][4]!=null && position.pieces[position.pos[3][3]].isWhite && !position.pieces[position.pos[3][3]].isQueen && position.pieces[position.pos[6][4]].isWhite && !position.pieces[position.pos[6][4]].isQueen)
-            anl+=combination;
-        if (position.pos[4][4]!=null && position.pos[1][3]!=null && position.pieces[position.pos[4][4]].isWhite && !position.pieces[position.pos[4][4]].isQueen && position.pieces[position.pos[1][3]].isWhite && !position.pieces[position.pos[1][3]].isQueen)
-            anl+=combination;
+        if (position.pos[2][4] != null && position.pos[7][5] != null && position.pieces[position.pos[2][4]].isWhite && !position.pieces[position.pos[2][4]].isQueen && position.pieces[position.pos[7][5]].isWhite && !position.pieces[position.pos[7][5]].isQueen)
+            anl += combination;
+        if (position.pos[5][3] != null && position.pos[0][2] != null && !position.pieces[position.pos[5][3]].isWhite && !position.pieces[position.pos[5][3]].isQueen && !position.pieces[position.pos[0][2]].isWhite && !position.pieces[position.pos[0][2]].isQueen)
+            anl -= combination;
+        if (position.pos[3][3] != null && position.pos[6][4] != null && position.pieces[position.pos[3][3]].isWhite && !position.pieces[position.pos[3][3]].isQueen && position.pieces[position.pos[6][4]].isWhite && !position.pieces[position.pos[6][4]].isQueen)
+            anl += combination;
+        if (position.pos[4][4] != null && position.pos[1][3] != null && position.pieces[position.pos[4][4]].isWhite && !position.pieces[position.pos[4][4]].isQueen && position.pieces[position.pos[1][3]].isWhite && !position.pieces[position.pos[1][3]].isQueen)
+            anl += combination;
 
         for (int i = 0; i < position.livePieces.size(); i++)
             if (position.pieces[position.livePieces.get(i)].isWhite) {
@@ -464,10 +494,10 @@ class AiRun {
         anl += deltaw * flank;
         anl -= deltab * flank;
 
-        anl*=10000;
+        anl *= 10000;
         double a = Math.round(anl);
-        a/=10000;
-        return  a;
+        a /= 10000;
+        return a;
     }
 
     private boolean passToQueen(Position position, int x, int y) {
