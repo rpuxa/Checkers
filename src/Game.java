@@ -14,11 +14,9 @@ public class Game {
     static int timeToMove = 0;
     static Double score = 0.0;
     static Thread timer;
-    static Map<Integer, Map<Long, Moves>> hashValidMoves = new HashMap<>();
-    static Map<Integer, Map<Long, Double[]>> hashPos = new HashMap<>();
+    static Map<Integer, Map<Long, Moves>> hashValidMoves = new TreeMap<>();
     static int movesInGame = 0;
     static boolean firstWinMassage = true;
-    static int offerDrawMoves = 0;
 
     private static void run() throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
@@ -27,18 +25,12 @@ public class Game {
                 long size = 0;
                 for (int i = 0; i < movesInGame; i++) {
                     try {
-                        hashPos.get(movesInGame).clear();
-                    }
-                    catch (Exception ignored) {}
-                    try {
                         hashValidMoves.get(movesInGame).clear();
                     }
                     catch (Exception ignored) {}
                 }
 
-                for (int i = 0; i < hashPos.size(); i++)
-                    if (hashPos.get(i)!=null)
-                        size += hashPos.get(i).size();
+
                 System.out.println("Размер : " + size);
             Move.block = false;
             movesInGame += 2;
@@ -403,7 +395,7 @@ class Position {
             this.pos[i] = position.pos[i].clone();
         }
         this.livePieces = new ArrayList<>(position.livePieces);
-        this.validMoves = new ArrayList<>(position.validMoves);
+        this.validMoves = new ArrayList<>();
         this.take = position.take;
         if (position.movePiece != null)
             this.movePiece = new Point(position.movePiece.x, position.movePiece.y);
