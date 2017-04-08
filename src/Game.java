@@ -1,4 +1,5 @@
 import javax.swing.*;
+import java.io.*;
 import java.util.*;
 
 public class Game {
@@ -17,6 +18,8 @@ public class Game {
     static Map<Integer, Map<Long, Moves>> hashValidMoves = new TreeMap<>();
     static int movesInGame = 0;
     static boolean firstWinMassage = true;
+    static ArrayList<BaseGame> games;
+    static Map<PosInfo, DebutPos> debut;
 
     private static void run() throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
@@ -96,9 +99,8 @@ public class Game {
             for (Point[] moves : threadResult)
                 Game.position = MakeMove(position, moves[0].x, moves[0].y, moves[1].x, moves[1].y);
             System.out.println("Ход: " + (char) (threadResult.get(0)[0].x + 'a') + (threadResult.get(0)[0].y + 1) + " " + (char) (threadResult.get(threadResult.size() - 1)[1].x + 'a') + (threadResult.get(threadResult.size() - 1)[1].y + 1));
-            if (score != 10000)
-                System.out.println("Оценка: " + score);
-            System.out.println((double) ((System.currentTimeMillis() - st)) / 1000 + " сек.");
+            if ((System.currentTimeMillis() - st)>timeToMove+5000)
+                hashValidMoves.clear();
             timer = new Thread(() -> {
                 //try {
                 //  while (true) {
@@ -109,10 +111,17 @@ public class Game {
                 // }
             });
             timer.start();
-            if (firstWinMassage && score < -290 && score > -300) {
-                JOptionPane.showMessageDialog(null, "Компьютер нашел победу в " + (int) ((300 + score) * 100) + " полуходов");
-                firstWinMassage = false;
+            if (score != -1000.0) {
+                if (score != 10000)
+                    System.out.println("Оценка: " + score);
+                if (firstWinMassage && score < -290 && score > -300) {
+                    JOptionPane.showMessageDialog(null, "Компьютер нашел победу в " + (int) ((300 + score) * 100) + " полуходов");
+                    firstWinMassage = false;
+                }
             }
+            else
+                System.out.println("Ход из базы");
+            System.out.println((double) ((System.currentTimeMillis() - st)) / 1000 + " сек.");
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
             Thread.sleep(600);
@@ -186,6 +195,23 @@ public class Game {
     }
 
     public static void main(String[] args) throws InterruptedException {
+        /*File file = new File("Base.dat");
+        if (file.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Base.dat"))) {
+                games = (ArrayList<BaseGame>) ois.readObject();
+            } catch (Exception ex) {
+                System.out.println("ERROR1");
+            }
+        }*/
+        File file = new File("Debut.dat");
+        if (file.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Debut.dat"))) {
+                debut = (Map<PosInfo, DebutPos>) ois.readObject();
+            } catch (Exception ex) {
+                System.out.println("ERROR2");
+            }
+        }
+
         timer = new Thread(() -> {
             //  try {
             //     while (true) {
@@ -232,55 +258,6 @@ public class Game {
                 i++;
             }
 
-     /*  Piece[] pieces = {new Piece(false,false),new Piece(false,false),new Piece(false,false), new Piece(true,false),new Piece(true,false)};
-        Integer[][] pos = new Integer[8][8];
-        ArrayList<Integer> livePieces = new ArrayList<>();
-        pos[7][7]=0;
-        pos[2][2]=1;
-        pos[4][4]=2;
-        pos[0][0]=3;
-        pos[2][0]=4;
-        livePieces.add(0);
-        livePieces.add(1);
-        livePieces.add(2);
-        livePieces.add(3);
-        livePieces.add(4);
-        */
-/*
-        Piece[] pieces = {new Piece(false,false),new Piece(false,false),new Piece(false,false), new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(false,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false),new Piece(true,false)};
-        Integer[][] pos = new Integer[8][8];
-        ArrayList<Integer> livePieces = new ArrayList<>();
-        pos[1][7]=0;
-        pos[3][7]=1;
-        pos[5][7]=2;
-        pos[6][4]=3;
-        pos[7][5]=4;
-        pos[0][4]=5;
-        pos[2][4]=6;
-        pos[0][2]=7;
-        pos[2][2]=8;
-        pos[4][2]=9;
-        pos[6][2]=10;
-        pos[0][0]=11;
-        pos[2][0]=12;
-        pos[4][0]=13;
-        pos[5][1]=14;
-        livePieces.add(0);
-        livePieces.add(1);
-        livePieces.add(2);
-        livePieces.add(3);
-        livePieces.add(4);
-        livePieces.add(5);
-        livePieces.add(6);
-        livePieces.add(7);
-        livePieces.add(8);
-        livePieces.add(9);
-        livePieces.add(10);
-        livePieces.add(11);
-        livePieces.add(12);
-        livePieces.add(13);
-        livePieces.add(14);
-*/
         position = new Position(pieces, pos, livePieces, new ArrayList<>(), false, null);
         new Board().setVisible(true);
         Editor editor = new Editor();
@@ -354,7 +331,7 @@ class Point{
     }
 }
 
-class Piece{
+class Piece implements Serializable{
     boolean isWhite;
     boolean isQueen;
     Piece(boolean isWhite, boolean isQueen){
@@ -492,7 +469,7 @@ class Position {
         }
     }
 
-    boolean takeQueen(int x, int y, int[] direction2, boolean isTurnWhite) {
+     boolean takeQueen(int x, int y, int[] direction2, boolean isTurnWhite) {
         int[][] directions = {{-direction2[0], direction2[1]}, {direction2[0], -direction2[1]}};
         for (int[] direction : directions)
             for (int i = 1; AiRun.isInBoard(x + (i + 1) * direction[0], y + (i + 1) * direction[1]); i++)
@@ -530,7 +507,7 @@ class Position {
             for (int j = 0; j < Game.BOARD_SIZE; j++)
             if ((i+j) % 2 == 0){
                 numPos *= 3L;
-                if ((i + j) % 2 == 0 && pos[i][j] != null)
+                if (pos[i][j] != null)
                         numPos += (pieces[pos[i][j]].isWhite) ? 1L : 2L;
 
             }

@@ -1,8 +1,4 @@
-import com.sun.rmi.rmid.ExecPermission;
-
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-
 
 class AiRun {
 
@@ -19,7 +15,39 @@ class AiRun {
         this.threadNumber = threadNumber;
     }
 
+    int generateIndex(double[] p) {
+        double prob = Math.random();
+
+        int index = Arrays.binarySearch(p,prob);
+        if (index < 0) index = ~index;
+
+        return index;
+    }
+
     ArrayList<Point[]> bfs(Position position) throws InterruptedException {
+        DebutPos pos = null;
+
+        try {
+            pos = Game.debut.get(new PosInfo(new CompressedPos(position.pieces, position.pos, position.livePieces)));
+        }
+        catch (NullPointerException ignore) {}
+
+        if (pos != null){
+            double[] p = new double[pos.moves.size()];
+            System.out.println( pos.moves.get(0).count);
+            System.out.println(pos.countGames);
+            p[0] = (double) pos.moves.get(0).count / (double) pos.countGames;
+            for (int i = 1; i < p.length; i++)
+                p[i] = p[i-1] + (double)pos.moves.get(i).count / (double)pos.countGames;
+            int index = generateIndex(p);
+            String stringMove = Debut.byteArrToStr(pos.moves.get(index).move);
+            ArrayList<Point[]> result = new ArrayList<>();
+            for (int i = 0; i <= stringMove.length() - 3; i += 3) {
+                result.add(new Point[]{new Point(stringMove.charAt(i)-'a',stringMove.charAt(i+1)-'1'),new Point(stringMove.charAt(i+3)-'a',stringMove.charAt(i+4)-'1')});
+            }
+            Game.score = -1000.0;
+            return result;
+        }
         Double min = 10000.0;
         ArrayList<Point[]> result = new ArrayList<>();
         Point[] resultMovePoint = new Point[2];
@@ -50,7 +78,7 @@ class AiRun {
                                 break label;
                         }
 
-                    if (i + 4 >= 80)
+                    if (i + 4 >= 6)
                         break;
 
                     if (System.currentTimeMillis() - Game.st >= Game.timeToMove)
@@ -88,13 +116,13 @@ class AiRun {
     private Double[] analyze(Position position, int depth, int maxDepth, double alpha, double beta, boolean first, boolean isNegaScoutOn, Point[] killerMove) throws InterruptedException {
         try {
             Moves move = Game.hashValidMoves.get(Game.movesInGame + depth + 1).get(position.getNumPos(depth % 2 == 0));
-           if (move.depth >= realDepth - depth && depth!=0)
+      /*     if (move.depth >= realDepth - depth && depth!=0)
                try {
                    return new Double[]{move.score, (double) (move.validMoves.get(0)[0].x * 1000 + move.validMoves.get(0)[0].y * 100 + move.validMoves.get(0)[1].x * 10 + move.validMoves.get(0)[1].y)};
                }
                catch (IndexOutOfBoundsException e){
                    return new Double[]{move.score};
-               }
+               }*/
             position.validMoves = new ArrayList<>(move.validMoves);
             position.take = move.take;
         } catch (NullPointerException ignore) {}
@@ -362,7 +390,7 @@ class AiRun {
         final double costQueen = 3 * costPiece;
         final double costOfCell = -0.002;
         final double passtoQueen = 0.5;
-        final double flank = -0.01 * position.livePieces.size() / 24;
+        final double flank = -0.08;
         final double bigWay = 0.07;
         final double combination = 0.09;
 
@@ -444,25 +472,26 @@ class AiRun {
                 if (position.pos[x][y] != null && passToQueen(position, x, y))
                     anl += (position.pieces[position.pos[x][y]].isWhite) ? passtoQueen : -passtoQueen;
 
-        int deltaw = 0, deltab = 0;
+        int rightFlankBlack = 0, leftFlankBlack = 0,rightFlankWhite = 0, leftFlankWhite = 0;
         for (int x = 0; x <= 7; x++)
             for (int y = 0; y <= 7; y++)
-                if (position.pos[x][y] != null) {
-                    if (x >= 3) {
+                if (position.pos[x][y] != null && !position.pieces[position.pos[x][y]].isQueen) {
+                    if (x >= 4) {
                         if (position.pieces[position.pos[x][y]].isWhite)
-                            deltaw++;
+                            rightFlankWhite++;
                         else
-                            deltab++;
+                            rightFlankBlack++;
                     }
-                    if (x <= 4) {
+                    else {
                         if (position.pieces[position.pos[x][y]].isWhite)
-                            deltaw--;
+                            leftFlankWhite++;
                         else
-                            deltab--;
+                            leftFlankBlack++;
                     }
                 }
-        anl += deltaw * flank;
-        anl -= deltab * flank;
+
+        anl += Math.abs(rightFlankWhite - leftFlankWhite) * flank;
+        anl -= Math.abs(rightFlankBlack - leftFlankBlack) * flank;
 
         anl *= 10000;
         double a = Math.round(anl);
