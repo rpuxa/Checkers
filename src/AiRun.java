@@ -46,6 +46,9 @@ class AiRun {
                 result.add(new Point[]{new Point(stringMove.charAt(i)-'a',stringMove.charAt(i+1)-'1'),new Point(stringMove.charAt(i+3)-'a',stringMove.charAt(i+4)-'1')});
             }
             Game.score = -1000.0;
+            while (Game.threadNumber == -1 && threadNumber != -9) {
+                System.out.print("");
+            }
             return result;
         }
         Double min = 10000.0;
@@ -66,7 +69,7 @@ class AiRun {
                     //   if (Objects.equals(Thread.currentThread().getName(), "0 "))
                     System.out.print(i + 4 + " ");
 
-                    Double[] anl = analyze(new Position(position), 0, i + 4, -1000, 1000, i <= 4, false,null);
+                    Double[] anl = analyze(new Position(position), 0, i + 4, -1000, 1000, i <= 4, false,null, new Draw(Game.draw));
                     if (!(Game.threadNumber == -1 || Objects.equals(Game.threadNumber + " ", threadNumber + " "))) {
                         System.out.println("Завершен " + Thread.currentThread().getName());
                         return new ArrayList<>();
@@ -113,7 +116,13 @@ class AiRun {
         return new ArrayList<>(result);
     }
 
-    private Double[] analyze(Position position, int depth, int maxDepth, double alpha, double beta, boolean first, boolean isNegaScoutOn, Point[] killerMove) throws InterruptedException {
+    private Double[] analyze(Position position, int depth, int maxDepth, double alpha, double beta, boolean first, boolean isNegaScoutOn, Point[] killerMove, Draw draw) throws InterruptedException {
+        if (position.livePieces.size()<=3 && depth!=0 && position.movePiece==null)
+        try {
+            double d = (double)Game.endings.get(position.livePieces.size()).get(new PosInfoT(position,depth % 2 == 1))[0]/100;
+            return new Double[]{d};
+        } catch (NullPointerException ignore) {}
+
         try {
             Moves move = Game.hashValidMoves.get(Game.movesInGame + depth + 1).get(position.getNumPos(depth % 2 == 0));
       /*     if (move.depth >= realDepth - depth && depth!=0)
@@ -145,7 +154,21 @@ class AiRun {
                 i++;
                 double result;
                 Position newPosition = Game.MakeMove(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y);
-                result = analyze(newPosition, 1, maxDepth, alpha, beta, first, false, null)[0];
+
+                int whiteQueens = 0, blackQueens = 0;
+                for (int c:
+                        position.livePieces) {
+                    if (position.pieces[c].isQueen && position.pieces[c].isWhite)
+                        whiteQueens++;
+                    if (position.pieces[c].isQueen && !position.pieces[c].isWhite)
+                        blackQueens++;
+                }
+
+                Draw newDraw = new Draw(draw);
+
+                newDraw.isDraw(position.take, position.pieces[position.pos[move[0].x][move[0].y]].isQueen, ((depth % 2 == 1) ? move[1].y == 7 : move[1].y == 0) && !position.pieces[position.pos[move[0].x][move[0].y]].isQueen, (blackQueens >= 3 && whiteQueens == 1 || whiteQueens >= 3 && blackQueens == 1) && position.livePieces.size() == whiteQueens + blackQueens, position.livePieces.size(), (whiteQueens > 0 && blackQueens > 0));
+
+                result = analyze(newPosition, 1, maxDepth, alpha, beta, first, false, null,new Draw(draw))[0];
 
                 if (System.currentTimeMillis() - Game.st >= Game.timeToMove && !first)
                     break;
@@ -218,7 +241,20 @@ class AiRun {
                     }
                 }*/
 
-            Double[] analyzed = analyze(newPosition, depth + 1, maxDepth, alpha, beta, first, false, KillerMove);
+            int whiteQueens = 0, blackQueens = 0;
+            for (int c:
+                    position.livePieces) {
+                if (position.pieces[c].isQueen && position.pieces[c].isWhite)
+                    whiteQueens++;
+                if (position.pieces[c].isQueen && !position.pieces[c].isWhite)
+                    blackQueens++;
+            }
+
+            Draw newDraw = new Draw(draw);
+
+            newDraw.isDraw(position.take, position.pieces[position.pos[move[0].x][move[0].y]].isQueen, ((depth % 2 == 1) ? move[1].y == 7 : move[1].y == 0) && !position.pieces[position.pos[move[0].x][move[0].y]].isQueen, (blackQueens >= 3 && whiteQueens == 1 || whiteQueens >= 3 && blackQueens == 1) && position.livePieces.size() == whiteQueens + blackQueens, position.livePieces.size(), (whiteQueens > 0 && blackQueens > 0));
+
+            Double[] analyzed = analyze(newPosition, depth + 1, maxDepth, alpha, beta, first, false, KillerMove,new Draw(draw));
             result = analyzed[0];
                 try {
                     KillerMove = new Point[]{new Point ((int)(double)analyzed[1]/1000,((int)(double)analyzed[1]/100) % 10), new Point(((int)(double)analyzed[1]/10) % 10,((int)(double)analyzed[1]) % 10)};
@@ -424,8 +460,7 @@ class AiRun {
             return 0;
         if (whiteQueens == 1 && whitePieces == 0 && blackQueens >= 1 && blackPieces + blackQueens == 3 && BigWayWhite || blackQueens == 1 && blackPieces == 0 && whiteQueens >= 1 && whitePieces + whiteQueens == 3 && BigWayBlack)
             return 0;
-        if (whiteQueens == 1 && whitePieces == 1 && blackQueens >= 1 && blackPieces + blackQueens <= 4 && blackPieces >= 1 && BigWayWhite || blackQueens == 1 && blackPieces == 1 && whiteQueens >= 1 && whitePieces + blackQueens <= 4 && whitePieces >= 1 && BigWayBlack)
-            return 0;
+
 
         double anl = 0;
         if (BigWayBlack)
@@ -530,7 +565,8 @@ class AiRun {
         }
     }
 
-}
+    }
+
 class Moves{
     ArrayList<Point[]> validMoves;
     boolean take;

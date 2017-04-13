@@ -76,12 +76,12 @@ public class Reader {
                             stack.clear();
                             game.result = null;
                             error = false;
-                            if (games.size()!=0 && games.size()%1000==0) {
-                                Debut.filling();
+                           /* if (games.size()>=1000 && games.size()%1000==0) {
+                                Coeff.counting();
                                 games.clear();
-                            }
-                            //if (games.size()>=3000)
-                           //     break label;
+                            }*/
+                            if (games.size()>=1000)
+                                break label;
                         } else if (character == ' ' && !error) {
                             try {
                                 ArrayList<Character> stackList = new ArrayList(stack);
@@ -113,9 +113,9 @@ public class Reader {
             oos.writeObject(games);
         } catch (Exception ignore) {
         }*/
-        Debut.filling();
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Debut.dat"))) {
-            oos.writeObject(Debut.debut);
+        Coeff.counting();
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Coeffs.dat"))) {
+          //  oos.writeObject(Coeff.coeffs);
         } catch (Exception ignore) {}
     }
 

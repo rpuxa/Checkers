@@ -20,8 +20,13 @@ public class Game {
     static boolean firstWinMassage = true;
     static ArrayList<BaseGame> games;
     static Map<PosInfo, DebutPos> debut;
+    static Coeffs coeffs = new Coeffs();
+    static Map<Integer,Map<PosInfoT,Short[]>> endings = new HashMap<>();
+    static Draw draw = new Draw();
 
     private static void run() throws InterruptedException {
+        boolean isQ = false;
+        int x1, x2, y1, y2;
         Scanner scanner = new Scanner(System.in);
         label:
         while (true) {
@@ -50,7 +55,6 @@ public class Game {
                     String n = scanner.next();
                     break label;
                 }
-                int x1, x2, y1, y2;
                 Move.position = new Position(position);
                 System.out.println("Ждем хода...");
 
@@ -63,6 +67,7 @@ public class Game {
                 y1 = Move.from.y;
                 x2 = Move.to.x;
                 y2 = Move.to.y;
+                isQ = position.pieces[position.pos[x1][y1]].isQueen;
                 position = MakeMove(position, x1, y1, x2, y2);
 /*
                 Move.block = true;
@@ -85,6 +90,25 @@ public class Game {
                 if (position.movePiece == null)
                     break;
             }
+            int whiteQueens = 0, blackQueens = 0;
+            for (int c:
+                    position.livePieces) {
+                if (position.pieces[c].isQueen && position.pieces[c].isWhite)
+                    whiteQueens++;
+                if (position.pieces[c].isQueen && !position.pieces[c].isWhite)
+                    blackQueens++;
+            }
+            boolean isDraw = (draw.isDraw(position.take, isQ, y2 == 7 && !isQ, (blackQueens >= 3 && whiteQueens == 1 || whiteQueens >= 3 && blackQueens == 1) && position.livePieces.size() == whiteQueens + blackQueens, position.livePieces.size(), (whiteQueens > 0 && blackQueens > 0)));
+
+            if (isDraw) {
+                System.out.println("Ничья!");
+                Move.timer.interrupt();
+                JOptionPane.showMessageDialog(null, "Ничья!");
+                Move.block = true;
+                String n = scanner.next();
+                break label;
+            }
+
             position.update(false);
             if (position.validMoves.size() == 0) {
                 System.out.println("Вы победили!");
@@ -96,11 +120,30 @@ public class Game {
             }
             System.out.println("Идет анализ...");
             ThreadsStop(new Position(position));
-            for (Point[] moves : threadResult)
+            for (Point[] moves : threadResult) {
+                isQ = position.pieces[position.pos[moves[0].x][moves[0].y]].isQueen;
                 Game.position = MakeMove(position, moves[0].x, moves[0].y, moves[1].x, moves[1].y);
+            }
             System.out.println("Ход: " + (char) (threadResult.get(0)[0].x + 'a') + (threadResult.get(0)[0].y + 1) + " " + (char) (threadResult.get(threadResult.size() - 1)[1].x + 'a') + (threadResult.get(threadResult.size() - 1)[1].y + 1));
             if ((System.currentTimeMillis() - st)>timeToMove+5000)
                 hashValidMoves.clear();
+            for (int c:
+                    position.livePieces) {
+                if (position.pieces[c].isQueen && position.pieces[c].isWhite)
+                    whiteQueens++;
+                if (position.pieces[c].isQueen && !position.pieces[c].isWhite)
+                    blackQueens++;
+            }
+            isDraw = (draw.isDraw(position.take, isQ, y2 == 0 && !isQ, (blackQueens >= 3 && whiteQueens == 1 || whiteQueens >= 3 && blackQueens == 1) && position.livePieces.size() == whiteQueens + blackQueens, position.livePieces.size(), (whiteQueens > 0 && blackQueens > 0)));
+
+            if (isDraw) {
+                System.out.println("Ничья!");
+                Move.timer.interrupt();
+                JOptionPane.showMessageDialog(null, "Ничья!");
+                Move.block = true;
+                String n = scanner.next();
+                break label;
+            }
             timer = new Thread(() -> {
                 //try {
                 //  while (true) {
@@ -124,7 +167,6 @@ public class Game {
             System.out.println((double) ((System.currentTimeMillis() - st)) / 1000 + " сек.");
             System.out.println("-----------------------------");
             System.out.println("Ваш ход:");
-            Thread.sleep(600);
             Move.replacePosition(new Position(position));
             Move.sounds("Sounds/blackTurn.wav");
             Move.block = false;
@@ -194,24 +236,7 @@ public class Game {
         threadNumber = -1;
     }
 
-    public static void main(String[] args) throws InterruptedException {
-        /*File file = new File("Base.dat");
-        if (file.exists()) {
-            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Base.dat"))) {
-                games = (ArrayList<BaseGame>) ois.readObject();
-            } catch (Exception ex) {
-                System.out.println("ERROR1");
-            }
-        }*/
-        File file = new File("Debut.dat");
-        if (file.exists()) {
-            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Debut.dat"))) {
-                debut = (Map<PosInfo, DebutPos>) ois.readObject();
-            } catch (Exception ex) {
-                System.out.println("ERROR2");
-            }
-        }
-
+    private static void loading() throws InterruptedException {
         timer = new Thread(() -> {
             //  try {
             //     while (true) {
@@ -222,8 +247,56 @@ public class Game {
             //   } catch (InterruptedException ignored) {}
         });
         timer.start();
-        Scanner scanner = new Scanner(System.in);
+
+        File file = new File("Debut.dat");
+        if (file.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Debut.dat"))) {
+                debut = (Map<PosInfo, DebutPos>) ois.readObject();
+            } catch (Exception ex) {
+                System.out.println();
+            }
+        }
+
+        file = new File("Coeffs.dat");
+        if (file.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Coeffs.dat"))) {
+                coeffs = (Coeffs) ois.readObject();
+            } catch (Exception ex) {
+            }
+        }
+
+        new Thread(() -> {
+           final File file2 = new File("Endings/Two_Figure_Endings.dat");
+            if (file2.exists()) {
+                try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Endings/Two_Figure_Endings.dat"))) {
+                    endings.put(2, (Map<PosInfoT, Short[]>) ois.readObject());
+                } catch (Exception ex) {
+                    System.out.println();
+                }
+            }
+        }).start();
+
+        Thread thread =  new Thread(() -> {
+            final File file2 = new File("Endings/Three_Figure_Endings.dat");
+            if (file2.exists()) {
+                try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Endings/Three_Figure_Endings.dat"))) {
+                    endings.put(3, (Map<PosInfoT, Short[]>) ois.readObject());
+                } catch (Exception ex) {
+                    System.out.println();
+                }
+            }
+        });
+
+        thread.start();
+        thread.join();
+    }
+
+    public static void main(String[] args) throws InterruptedException {
         System.out.println("Запуск программы...");
+
+        loading();
+
+        Scanner scanner = new Scanner(System.in);
         System.out.println("Время на ход (в миллисекундах):");
         try {
             timeToMove = Integer.parseInt(args[0]);
