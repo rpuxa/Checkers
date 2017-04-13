@@ -119,8 +119,11 @@ class AiRun {
     private Double[] analyze(Position position, int depth, int maxDepth, double alpha, double beta, boolean first, boolean isNegaScoutOn, Point[] killerMove, Draw draw) throws InterruptedException {
         if (position.livePieces.size()<=3 && depth!=0 && position.movePiece==null)
         try {
-            double d = (double)Game.endings.get(position.livePieces.size()).get(new PosInfoT(position,depth % 2 == 1))[0]/100;
-            return new Double[]{d};
+            Position newPosition = new Position(position);
+            if (depth % 2 == 0)
+                newPosition.reverce();
+            double d = (double)Game.endings.get(position.livePieces.size()).get(new PosInfo(new CompressedPos(newPosition.pieces,newPosition.pos,newPosition.livePieces)))/100;
+            return new Double[]{(depth % 2 == 0) ? -d:d};
         } catch (NullPointerException ignore) {}
 
         try {

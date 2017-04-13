@@ -1,3 +1,5 @@
+import javafx.geometry.Pos;
+
 import java.io.*;
 import java.util.*;
 
@@ -5,7 +7,7 @@ public class Ending {
 
     public static void main(String[] args) {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Endings/Two_Figure_Endings.dat"))) {
-            endings.put(2, (Map<PosInfoT, Short[]>) ois.readObject());
+           // endings.put(2, (Map<PosInfoT, Short[]>) ois.readObject());
         } catch (Exception ex) {
         }
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Endings/Three_Figure_Endings.dat"))) {
@@ -47,28 +49,31 @@ public class Ending {
                                                                     try {
                                                                         short d = endings.get(newPosition.livePieces.size()).get(posInfoT)[0];
                                                                     } catch (NullPointerException e) {
-                                                                        short result = analyze(newPosition, turn,0);
+                                                                        short result = analyze(newPosition, turn,0,false);
                                                                         endings.computeIfAbsent(newPosition.livePieces.size(), k -> new HashMap<>());
                                                                         endings.get(newPosition.livePieces.size()).put(posInfoT, new Short[]{result,0});
                                                                     }
                                                                 } catch (NullPointerException ignore) {
                                                                 }
                                                             }
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Endings/Two_Figure_Endings.dat"))) {
-            oos.writeObject(endings.get(2));
-        } catch (Exception ignore) {
-            System.out.println();
-        }
 
+
+
+
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Endings/Two_Figure_Endings.dat"))) {
+                oos.writeObject(endings2.get(2));
+            } catch (Exception ignore) {
+                System.out.println();
+            }
         System.out.println();
 
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Endings/Three_Figure_Endings.dat"))) {
-            oos.writeObject(endings.get(3));
+           oos.writeObject(endings2.get(3));
         } catch (Exception ignore) {
         }
 
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Endings/Four_Figure_Endings.dat"))) {
-              // oos.writeObject(endings.get(4));
+              // oos.writeObject(endings2.get(4));
         } catch (Exception ignore) {
         }
 
@@ -92,7 +97,17 @@ public class Ending {
         return new Position(pieces, pos, livePieces, new ArrayList<>(), false, null);
     }
 
-    private static short analyze(Position position, short depth, int c) {
+    private static short analyze(Position position, short depth, int c, boolean turnQ) {
+        if (depth != 0 && position.movePiece != null)
+            depth--;
+
+        if (position.movePiece == null)
+        try {
+            Short[] hash = endings.get(position.livePieces.size()).get(new PosInfoT(position,depth % 2 == 1));
+            if (hash[1]<=c)
+                return hash[0];
+        } catch (NullPointerException ignore) {}
+
         int whiteQueens = 0, blackQueens = 0;
         for (int a:
                 position.livePieces) {
@@ -102,48 +117,23 @@ public class Ending {
                 blackQueens++;
         }
 
-        if (position.take)
+        if (position.take || turnQ)
             c=0;
-        if (!((whiteQueens==1 && blackQueens<=2 && blackQueens!=0 || blackQueens == 1 && whiteQueens<=2 && whiteQueens!=0) && position.livePieces.size()==blackQueens+whiteQueens))
-            c=0;
-        if (c>=4)
+        if (c>=4 && ((whiteQueens==1 && blackQueens<=2 && blackQueens!=0 || blackQueens == 1 && whiteQueens<=2 && whiteQueens!=0) && position.livePieces.size()==blackQueens+whiteQueens))
             return 0;
-
-        if (depth != 0 && position.movePiece != null)
-            depth--;
+        if (c>=20 && ((whiteQueens==1 && blackQueens<=2 && blackQueens!=0 || blackQueens == 1 && whiteQueens<=2 && whiteQueens!=0) && position.livePieces.size()>blackQueens+whiteQueens))
+            return 0;
 
         position.update(depth % 2 == 1);
 
-        short min = (short) (30000 - depth);
-        short max = (short) (-30000 + depth);
+        short min = (short) (-depth);
+        short max = depth;
 
         for (Point[] move :
                 position.validMoves) {
             Position newPosition = Game.MakeMove(new Position(position), move[0].x, move[0].y, move[1].x, move[1].y);
 
-            int count = newPosition.livePieces.size();
-
-            short result = 0;
-            Short[] hash;
-            boolean err;
-
-            PosInfoT posInfoT = new PosInfoT(newPosition,depth % 2 == 0);
-
-            try {
-                hash = endings.get(count).get(posInfoT);
-                err = hash[0]==null;
-                if (hash[1]>c)
-                    err = true;
-                result = hash[0];
-            } catch (NullPointerException e) {
-                err = true;
-            }
-            if (err) {
-                result = analyze(newPosition, (short) (depth + 1), c + 1);
-                endings.computeIfAbsent(count, k -> new HashMap<>());
-                endings.get(count).put(posInfoT, new Short[]{result,(short)c});
-            }
-
+            short result = analyze(newPosition, (short) (depth + 1), c + 1,!position.pieces[position.pos[move[0].x][move[0].y]].isQueen && ((depth % 2 == 1) ? move[1].y==7 : move[1].y==0));
 
             if (depth % 2 == 0) {
                 if (result < min)
@@ -153,6 +143,8 @@ public class Ending {
                     max = result;
 
         }
+        endings.computeIfAbsent(position.livePieces.size(), k -> new HashMap<>());
+        endings.get(position.livePieces.size()).put(new PosInfoT(position,depth % 2 == 1), new Short[]{(depth % 2 == 0) ? min : max,(short)c});
         return (depth % 2 == 0) ? min : max;
     }
 }
@@ -213,8 +205,8 @@ class Draw implements Serializable {
 }
 
 class PosInfoT implements Serializable{
-    private short[] pieces;
-    private boolean white;
+    short[] pieces;
+    boolean white;
 
     PosInfoT(Position position,boolean white) {
         int count = 0;

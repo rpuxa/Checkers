@@ -21,7 +21,7 @@ public class Game {
     static ArrayList<BaseGame> games;
     static Map<PosInfo, DebutPos> debut;
     static Coeffs coeffs = new Coeffs();
-    static Map<Integer,Map<PosInfoT,Short[]>> endings = new HashMap<>();
+    static Map<Integer,Map<PosInfo,Short>> endings = new HashMap<>();
     static Draw draw = new Draw();
 
     private static void run() throws InterruptedException {
@@ -269,7 +269,7 @@ public class Game {
            final File file2 = new File("Endings/Two_Figure_Endings.dat");
             if (file2.exists()) {
                 try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Endings/Two_Figure_Endings.dat"))) {
-                    endings.put(2, (Map<PosInfoT, Short[]>) ois.readObject());
+                    endings.put(2, (Map<PosInfo, Short>) ois.readObject());
                 } catch (Exception ex) {
                     System.out.println();
                 }
@@ -280,7 +280,7 @@ public class Game {
             final File file2 = new File("Endings/Three_Figure_Endings.dat");
             if (file2.exists()) {
                 try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Endings/Three_Figure_Endings.dat"))) {
-                    endings.put(3, (Map<PosInfoT, Short[]>) ois.readObject());
+                    endings.put(3, (Map<PosInfo, Short>) ois.readObject());
                 } catch (Exception ex) {
                     System.out.println();
                 }
