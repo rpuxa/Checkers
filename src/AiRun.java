@@ -34,8 +34,6 @@ class AiRun {
 
         if (pos != null){
             double[] p = new double[pos.moves.size()];
-            System.out.println( pos.moves.get(0).count);
-            System.out.println(pos.countGames);
             p[0] = (double) pos.moves.get(0).count / (double) pos.countGames;
             for (int i = 1; i < p.length; i++)
                 p[i] = p[i-1] + (double)pos.moves.get(i).count / (double)pos.countGames;
@@ -81,7 +79,7 @@ class AiRun {
                                 break label;
                         }
 
-                    if (i + 4 >= 6)
+                    if (i + 4 >= 60)
                         break;
 
                     if (System.currentTimeMillis() - Game.st >= Game.timeToMove)

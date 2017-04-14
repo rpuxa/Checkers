@@ -61,14 +61,14 @@ public class Ending {
 
 
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Endings/Two_Figure_Endings.dat"))) {
-                oos.writeObject(endings2.get(2));
+                oos.writeObject(endings.get(2));
             } catch (Exception ignore) {
                 System.out.println();
             }
         System.out.println();
 
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Endings/Three_Figure_Endings.dat"))) {
-           oos.writeObject(endings2.get(3));
+           oos.writeObject(endings.get(3));
         } catch (Exception ignore) {
         }
 
