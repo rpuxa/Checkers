@@ -20,8 +20,10 @@ public class Ending {
     }
 
     static Map<Integer,Map<PosInfoT,Short[]>> endings = new HashMap<>();
+    static Map<PosInfoT,Integer[]> positions = new HashMap<>();
 
     static void endingAnalyze() {
+        label:
         for (int x1 = 0; x1 < 8; x1++)
             for (int y1 = 0; y1 < 8; y1++)
                 if ((x1 + y1) % 2 == 0)
@@ -30,16 +32,16 @@ public class Ending {
                             for (int y2 = 0; y2 < 8; y2++)
                                 if ((x2 + y2) % 2 == 0)
                                     for (int queen2 = 0; queen2 <= 1; queen2++)
-                                      for (int x3 = 0; x3 < 8; x3++)
+                                        for (int x3 = 0; x3 < 8; x3++)
                                             for (int y3 = 0; y3 < 8; y3++)
                                                 if ((x3 + y3) % 2 == 0)
                                                     for (int queen3 = 0; queen3 <= 1; queen3++)
-                                                    for (int color = 0; color <= 1; color++)
-                                                        for (short turn = 0; turn <= 1; turn++){
+                                                        for (int color = 0; color <= 1; color++)
+                                                            for (short turn = 0; turn <= 1; turn++) {
                                                                 try {
-                                                                    Position newPosition = create(new int[]{x1, x2,x3}, new int[]{y1, y2,x3}, new boolean[]{queen1==1,queen2==1,queen3==1}, new boolean[]{true, false,color==1});
+                                                                    Position newPosition = create(new int[]{x1, x2, x3}, new int[]{y1, y2, x3}, new boolean[]{queen1 == 1, queen2 == 1, queen3 == 1}, new boolean[]{true, false, color == 1});
 
-                                                                    PosInfoT posInfoT = new PosInfoT(newPosition,turn == 1);
+                                                                    PosInfoT posInfoT = new PosInfoT(newPosition, turn == 1);
 
                                                                     try {
                                                                         System.out.println(endings.get(3).size());
@@ -49,34 +51,58 @@ public class Ending {
                                                                     try {
                                                                         short d = endings.get(newPosition.livePieces.size()).get(posInfoT)[0];
                                                                     } catch (NullPointerException e) {
-                                                                        short result = analyze(newPosition, turn,0,false);
+                                                                        short result = analyze(newPosition, turn, 0, false);
                                                                         endings.computeIfAbsent(newPosition.livePieces.size(), k -> new HashMap<>());
-                                                                        endings.get(newPosition.livePieces.size()).put(posInfoT, new Short[]{result,0});
+                                                                        endings.get(newPosition.livePieces.size()).put(posInfoT, new Short[]{result, 0});
+                                                                        positions.put(posInfoT, newPosition.getIndex());
                                                                     }
+                                                                  //  if (endings.get(3).size()>=5000)
+                                                                   //     break label;
                                                                 } catch (NullPointerException ignore) {
                                                                 }
                                                             }
 
+        byte[][] end3 = new byte[4992][64];
+        byte[][] end2 = new byte[4992][16];
 
-
-
-            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Endings/Two_Figure_Endings.dat"))) {
-                oos.writeObject(endings.get(2));
-            } catch (Exception ignore) {
-                System.out.println();
+        for (PosInfoT pos : endings.get(2).keySet())
+            if (pos.white) {
+                Integer[] index = positions.get(pos);
+                    end2[index[0]][index[1]] = toByte(endings.get(2).get(pos)[0]);
             }
+
+        for (PosInfoT pos : endings.get(3).keySet())
+            if (pos.white) {
+                Integer[] index = positions.get(pos);
+                end3[index[0]][index[1]] = toByte(endings.get(3).get(pos)[0]);
+            }
+
+
+
+
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Endings/Two_Figure_Endings.dat"))) {
+            oos.writeObject(end2);
+        } catch (Exception ignore) {
+            System.out.println();
+        }
         System.out.println();
 
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Endings/Three_Figure_Endings.dat"))) {
-           oos.writeObject(endings.get(3));
+            oos.writeObject(end3);
         } catch (Exception ignore) {
         }
 
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Endings/Four_Figure_Endings.dat"))) {
-              // oos.writeObject(endings2.get(4));
+            // oos.writeObject(endings2.get(4));
         } catch (Exception ignore) {
         }
 
+    }
+
+    static byte toByte(short a){
+        if (a==0)
+            return 0;
+        return (byte)(((a>=0) ? 1 : -1)*(30000-Math.abs(a)));
     }
 
     static Position create(int[] x, int[] y, boolean[] queen, boolean[] isWhite){
@@ -126,8 +152,8 @@ public class Ending {
 
         position.update(depth % 2 == 1);
 
-        short min = (short) (-depth);
-        short max = depth;
+        short min = (short) (30000-depth);
+        short max = (short) (-30000 + depth);
 
         for (Point[] move :
                 position.validMoves) {
@@ -145,6 +171,7 @@ public class Ending {
         }
         endings.computeIfAbsent(position.livePieces.size(), k -> new HashMap<>());
         endings.get(position.livePieces.size()).put(new PosInfoT(position,depth % 2 == 1), new Short[]{(depth % 2 == 0) ? min : max,(short)c});
+        positions.put(new PosInfoT(position,depth % 2 == 1),position.getIndex());
         return (depth % 2 == 0) ? min : max;
     }
 }

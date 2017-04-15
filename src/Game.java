@@ -21,11 +21,11 @@ public class Game {
     static ArrayList<BaseGame> games;
     static Map<PosInfo, DebutPos> debut;
     static Coeffs coeffs = new Coeffs();
-    static Map<Integer,Map<PosInfo,Short>> endings = new HashMap<>();
+    static byte[][][] endings = new byte[2][][];
     static Draw draw = new Draw();
 
     private static void run() throws InterruptedException {
-        boolean isQ = false;
+        boolean isQ;
         int x1, x2, y1, y2;
         Scanner scanner = new Scanner(System.in);
         label:
@@ -269,7 +269,7 @@ public class Game {
            final File file2 = new File("Endings/Two_Figure_Endings.dat");
             if (file2.exists()) {
                 try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Endings/Two_Figure_Endings.dat"))) {
-                    endings.put(2, (Map<PosInfo, Short>) ois.readObject());
+                    endings[0] = (byte[][]) ois.readObject();
                 } catch (Exception ex) {
                     System.out.println();
                 }
@@ -280,7 +280,7 @@ public class Game {
             final File file2 = new File("Endings/Three_Figure_Endings.dat");
             if (file2.exists()) {
                 try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("Endings/Three_Figure_Endings.dat"))) {
-                    endings.put(3, (Map<PosInfo, Short>) ois.readObject());
+                    endings[1] = (byte[][]) ois.readObject();
                 } catch (Exception ex) {
                     System.out.println();
                 }
@@ -472,6 +472,41 @@ class Position {
             this.movePiece = new Point(7-movePiece.x, 7-movePiece.y);
         else
             this.movePiece = null;
+    }
+
+    Integer[] getIndex(){
+        int c = livePieces.size();
+        int count = 0;
+        int[] coord = new int[c];
+        int[] m = new int[c];
+        for (int x = 0; x < Game.BOARD_SIZE; x++)
+            for (int y = 0; y < Game.BOARD_SIZE; y++)
+            if (pos[x][y]!=null){
+                coord[count] = 4 * x + y / 2;
+                m[count] = (pieces[pos[x][y]].isWhite ? 0 : 2) + (pieces[pos[x][y]].isQueen ? 1 : 0);
+                count++;
+            }
+            int summ = 0;
+        for (int i = 1; i <= c; i++) {
+            int multi = 1;
+            for (int j = 0; j < i; j++)
+                multi *= coord[i-1]-j;
+            summ += multi/fact(i);
+        }
+        int matherial = 0;
+        for (int i = 0; i < c; i++) {
+            matherial += m[i]*Math.pow(4,i);
+        }
+        return new Integer[]{summ,matherial};
+    }
+
+    int fact(int a){
+        int result = 1;
+        if (a==0)
+            return 1;
+        for (int i = 1; i <= a; i++)
+            result *= i;
+        return result;
     }
 
     void update(boolean isTurnWhite) {

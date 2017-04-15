@@ -8,83 +8,60 @@ import java.util.Objects;
 
 public class Coeff {
 
-    static double[] y = new double[36], c = new double[36];
-    static double[][] x = new double[53000][36], b = new double[36][36];
+    static double[] y = new double[36];
+    static double[][] x = new double[53000][36];
     static double[] p = new double[53000];
+    static double[] n = new double[53000];
+    static int count;
 
     public static void counting() {
         int c = 0;
         for (BaseGame game : Reader.games) {
             double result;
+            double endGame = 0;
             try {
                 result = game.result;
             } catch (NullPointerException e) {
                 continue;
             }
             for (CompressedPos position : game.positions) {
-                coeff(position, result, c);
+                coeff(position, result, c,game.positions.size()-endGame);
                 c++;
+                endGame++;
             }
         }
-        method(c);
-    }
+        count = c;
+        System.out.println(c);
+        search(33,-3,3);
 
-    static void method(int count) {
-        for (int j = 0; j < 36; j++)
-            for (int k = 0; k < 36; k++)
-                for (int i = 0; i < count; i++)
-                    b[j][k] += x[i][j] * x[i][k];
-
-        for (int k = 0; k < 36; k++)
-            for (int i = 0; i < count; i++)
-                c[k] = p[i] * x[i][k];
-
-        gauss(b, c);
-
+        /*
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Coeffs.dat"))) {
             oos.writeObject(y);
         } catch (Exception ignore) {
-        }
-
+        }*/
     }
 
-    static void gauss(double[][] a, double[] b) {
-        int n = a.length;
-        for (int baseColumn = 0; baseColumn < n; ++baseColumn) {
-            int baseRow = baseColumn;
-            for (int row = baseRow; row < n; ++row) {
-                if (Math.abs(a[row][baseColumn]) > Math.abs(a[baseRow][baseColumn])) {
-                    baseRow = row;
-                }
-            }
-            if (a[baseRow][baseColumn] == 0) continue;
-
-            double[] tmp = a[baseColumn];
-            a[baseColumn] = a[baseRow];
-            a[baseRow] = tmp;
-            double tmpD = b[baseColumn];
-            b[baseColumn] = b[baseRow];
-            b[baseRow] = tmpD;
-            baseRow = baseColumn;
-
-            double baseElement = a[baseRow][baseColumn];
-            for (int row = 0; row < n; ++row) {
-                if (row == baseRow) continue;
-                double coeff = a[row][baseColumn] / baseElement;
-                for (int column = baseColumn; column < n; ++column) {
-                    a[row][column] -= a[baseRow][column] * coeff;
-                }
-                b[row] -= b[baseRow] * coeff;
-            }
-        }
-        for (int i = 0; i < 36; i++) {
-            if (a[i][i] == 0) y[i] = 0;
-            else y[i] = b[i] / a[i][i];
+    static void search(int j,double a, double b) {
+        if (Math.abs(a-b)<0.00001)
+            System.out.println(a);
+        else {
+            if (funtion(a, j) > 0 != funtion((a + b) / 2, j) > 0)
+                search(j, a, (a + b) / 2);
+            if (funtion(b, j) > 0 != funtion((a + b) / 2, j) > 0)
+                search(j, (a + b) / 2, b);
         }
     }
 
 
-    static void coeff(CompressedPos position, double result, int number) {
+    static double funtion(double a, int j) {
+        double answer = 0;
+        for (int i = 0; i < count; i++)
+            answer += (1 / (1 + Math.exp(-a * x[i][j])) - p[i]) * (Math.exp(-a * x[i][j] - n[i] / 40)) / Math.pow(1 + Math.exp(-a * x[i][j]),2);
+        return answer;
+    }
+
+
+    static void coeff(CompressedPos position, double result, int number, double endGame) {
         int FlankWhite = 0;
         boolean passW = false;
         boolean queenBlack = false;
@@ -140,7 +117,7 @@ public class Coeff {
         if (position.pos[3][3] != null && position.pos[6][4] != null && position.pieces[position.pos[3][3]].isWhite && !position.pieces[position.pos[3][3]].isQueen && position.pieces[position.pos[6][4]].isWhite && !position.pieces[position.pos[6][4]].isQueen)
             x[number][35]++;
         p[number] = result;
-
+        n[number] = endGame;
     }
 
     private static boolean passToQueen(CompressedPos position, int x, int y) {

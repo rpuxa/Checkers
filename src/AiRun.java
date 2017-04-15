@@ -1,3 +1,5 @@
+import com.sun.xml.internal.bind.v2.schemagen.xmlschema.ComplexType;
+
 import java.util.*;
 
 class AiRun {
@@ -79,7 +81,7 @@ class AiRun {
                                 break label;
                         }
 
-                    if (i + 4 >= 60)
+                    if (i + 4 >= 6)
                         break;
 
                     if (System.currentTimeMillis() - Game.st >= Game.timeToMove)
@@ -120,8 +122,12 @@ class AiRun {
             Position newPosition = new Position(position);
             if (depth % 2 == 0)
                 newPosition.reverce();
-            double d = (double)Game.endings.get(position.livePieces.size()).get(new PosInfo(new CompressedPos(newPosition.pieces,newPosition.pos,newPosition.livePieces)))/100;
-            return new Double[]{(depth % 2 == 0) ? -d:d};
+            Integer[] index = newPosition.getIndex();
+            double d = (double)Game.endings[position.livePieces.size()-2][index[0]][index[1]];
+            if (d==0)
+                return new Double[]{0.0};
+            d = ((depth % 2 == 0) ? -1 : 1)*(((d>=0) ? 1 : -1)*300-d/100);
+            return new Double[]{d};
         } catch (NullPointerException ignore) {}
 
         try {
